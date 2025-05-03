@@ -18,4 +18,10 @@ First Stage (Development) : 13th May
 Second Stage (Analysis) : 17th May
 Final (Review & Feedback) : 18th May (Eva not available on 18th, Eleonora not on 19th)
 
-Notes: Write docstrings and document functionality on Readme. 
+Notes: Write docstrings and document functionality on Readme.
+
+
+Database:
+
+It's necessary to use create() anytime the database is accessed. It will be accessed if it exists and created if it does not exist.
+
