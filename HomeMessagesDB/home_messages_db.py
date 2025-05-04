@@ -21,7 +21,7 @@ class HomeMessagesDB:
         """
         db = sa.create_engine(self.url)
             
-    def insert_table_smartthings(file_name):
+    def insert_table_smartthings(self,file_name):
         """
         Create (if it doesnt exist) tables of smart things and devices
         """
