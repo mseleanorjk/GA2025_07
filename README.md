@@ -20,8 +20,11 @@ Final (Review & Feedback) : 18th May (Eva not available on 18th, Eleonora not on
 
 Notes: Write docstrings and document functionality on Readme.
 
+DOCUMENTATION:
 
 Database:
 
 It's necessary to use create() anytime the database is accessed. It will be accessed if it exists and created if it does not exist.
 
+Database Class:
+The method insert_smart_things works by creating 2 tables (smart things and devices) if they do not exist, it handles compressed zip files.
