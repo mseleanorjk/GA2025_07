@@ -21,15 +21,14 @@ class HomeMessagesDB:
         """
         db = sa.create_engine(self.url)
             
-    def insert_table_smartthings(self,file_name):
+    def insert_table_smartthings(file_name):
         """
         Create (if it doesnt exist) tables of smart things and devices
         """
 
         # Importing the data with Pandas
-        smartthings = pd.read_csv(file_name, sep="\t")
-        devices = pd.read_csv(file_name, sep="\t")
-        
+        smartthings, devices = pd.read_csv(file_name, sep="\t")
+
         # Preparing the data
         smartthings["epoch"] = smartthings["epoch"].timestamp()
         smartthings = smartthings.copy()
@@ -56,10 +55,10 @@ class HomeMessagesDB:
                 try:
                     pd.to_sql(smartthings, db.connect(), if_exist="append", index=True, index_label="id")
                 except Exception as e:
-                    logging.error(f"Pandas could not insert table {file_name} in the database: {e}")
+                    logging.error(f"Pandas could not insert table {file_name} in the database {self.url}: {e}")
                     raise e
             except Exception as e:
-                    logging.error(f"Could not insert table {file_name} in the database: {e}")
+                    logging.error(f"Could not insert table {file_name} in the database {self.url}: {e}")
                     raise e
 
         # Creating foreign keys only for the tables that exist
@@ -94,13 +93,13 @@ class HomeMessagesDB:
                 try:
                     pd.to_sql(devices, db.connect(), if_exist="append", index=False)
                 except Exception as e:
-                    logging.error(f"Pandas could not insert table {file_name} in the database: {e}")
+                    logging.error(f"Pandas could not insert table {file_name} in the database {self.url}: {e}")
                     raise e
             except Exception as e:
-                    logging.error(f"Could not insert table {file_name} in the database: {e}")
+                    logging.error(f"Could not insert table {file_name} in the database {self.url}: {e}")
                     raise e
         
-    def insert_table_p1e(file_name):
+    def insert_table_p1e(self, file_name):
         """
         Create p1e table if it does not exist
         """
@@ -133,10 +132,10 @@ class HomeMessagesDB:
                 try:
                     pd.to_sql(p1e, db.connect(), if_exist="append", index=False)
                 except Exception as e:
-                    logging.error(f"Pandas could not insert table {file_name} in the database: {e}")
+                    logging.error(f"Pandas could not insert table {file_name} in the database {self.url}: {e}")
                     raise e
             except Exception as e:
-                    logging.error(f"Could not insert table {file_name} in the database: {e}")
+                    logging.error(f"Could not insert table {file_name} in the database {self.url}: {e}")
                     raise e
 
         # Handling the foreign key
@@ -149,7 +148,7 @@ class HomeMessagesDB:
                         FOREIGN KEY (epoch) 
                         REFERENCES smartthings (epoch)''')
         
-    def insert_table_p1g(file_name):
+    def insert_table_p1g(self, file_name):
         """
         Create p1g table if it does not exist
         """
@@ -175,10 +174,10 @@ class HomeMessagesDB:
                 try:
                     pd.to_sql(p1g, db.connect(), if_exist="append", index=False)
                 except Exception as e:
-                    logging.error(f"Pandas could not insert table {file_name} in the database: {e}")
+                    logging.error(f"Pandas could not insert table {file_name} in the database {self.url}: {e}")
                     raise e
             except Exception as e:
-                logging.error(f"Could not insert table {file_name} in the database: {e}")
+                logging.error(f"Could not insert table {file_name} in the database {self.url}: {e}")
                 raise e   
 
         # Handling the foreign key
@@ -190,6 +189,33 @@ class HomeMessagesDB:
                         ADD CONSTRAINT fk_p1g_smartthings
                         FOREIGN KEY (epoch) 
                         REFERENCES smartthings (epoch)''')
+
+    def query_db(self, query):
+        """
+        Function handling queries to the database
+        """
+        # Querying and printing the result
+        with db.connect() as connection:
+            result = connection.execute(query).fetchall()
+        print(result)
+
+        # Option to save the result
+        save_file = input("\nWould you like to save the result of this query as a new file? (y/N)\t")
+        if save_file == "y":
+            result.to_csv(f"query_result_{datetime.now()}")
+
+    def drop_table(self, table_name):
+        """
+        Function handling table deletions
+        """
+        table_names = sa.text("SELECT tableName FROM sqlite_master WHERE type='table' AND tableName='smartthings'")
+        with db.connect() as connection:
+            tables = connection.execute(table_names).fetchall()
+            if table_name in tables:
+                connection.execute(F'''DROP TABLE {table_name}''')
+            else:
+                logging.error(f"Table {table_name} does not exist in the database {self.url}.")
+        
         
 # if is_zipfile(file_name):
 #            try:
