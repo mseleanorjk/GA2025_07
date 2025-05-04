@@ -3,8 +3,12 @@ import pandas as pd
 import shutil
 from datetime import datetime
 import gzip
+import logging
 
 class HomeMessagesDB:
+    """
+    Class with methods handling the insertion, update, query and deletion of tables from a SQLite database
+    """
     def __init__(self, url):
         self.url = url
         
@@ -22,14 +26,16 @@ class HomeMessagesDB:
         Create (if it doesnt exist) tables of smart things and devices
         """
 
+        # Importing the data with Pandas
         smartthings, devices = pd.read_csv(file_name, sep="\t")
-        
+
+        # Preparing the data
         smartthings["epoch"] = smartthings["epoch"].timestamp()
-        numeric_values = pd.to_numeric(smartthings["value"], errors="coerce")
-        smartthings["value_int"] = numeric_values
-        smartthings["value_str"] = smartthings["value"].where(numeric_values.isna())
-        smartthings.drop(["level","loc","value"], axis=1, inplace=True)
-        
+        smartthings = smartthings.copy()
+        smartthings.loc[:, 'value_int'] = pd.to_numeric(smartthings['value'], errors='coerce')
+        smartthings.loc[:, 'value_str'] = df['value'].where(smartthings['value_int'].isna())
+
+        # Inserting the table in the database
         with db.connect() as connection:
             try:
                 try:
@@ -39,31 +45,38 @@ class HomeMessagesDB:
                     epoch TEXT NOT NULL,
                     capability TEXT NOT NULL,
                     attribute TEXT NOT NULL,
-                    value_int NUMERIC,
-                    value_str TEXT,
                     unit TEXT,
-                    FOREIGN KEY (name) 
-                        REFERENCES devices (name),
-                    FOREIGN KEY (epoch)
-                        REFERENCES p1e (epoch),
-                    FOREIGN KEY (epoch)
-                        REFERENCES p1g (epoch)
+                    value_int NUMERIC,
+                    value_str TEXT
                     )""")
                 except:
                     raise Exception as e:
                         print(f"SQL CREATE function failed: {e}")
                 try:
                     pd.to_sql(smartthings, db.connect(), if_exist="append", index=True, index_label="id")
-                except:
-                    raise Exception as e:
-                        print(f"Pandas could not insert table {file_name} in the database: {e}")
-            except:
-                raise Exception as e:
-                    print(f"Could not insert table {file_name} into the database: {e}")
+                except Exception as e:
+                    logging.error(f"Pandas could not insert table {file_name} in the database: {e}")
+                    raise e
+            except Exception as e:
+                    logging.error(f"Could not insert table {file_name} in the database: {e}")
+                    raise e
+
+        # Creating foreign keys only for the tables that exist
+        for table in ["p1e","p1g"]:
+            query = sa.text(f"SELECT tableName FROM sqlite_master WHERE type='table' AND tableName='{table}'")
+            with db.connect() as connection:
+                tables = connection.execute(query).fetchall()
+                if table in tables:
+                    connection.execute(f'''ALTER TABLE smartthings
+                             ADD CONSTRAINT fk_smartthings_{table}
+                             FOREIGN KEY (epoch) 
+                                 REFERENCES {table} (epoch)''')
         
+        # Preparing the devices table, which contains information about the devices
         devices.drop(df.columns.difference(["loc","level","name"]), axis=1, inplace=True)
         devices.drop_duplicates(inplace=True)
 
+        # Inserting the devices table into the database
         with db.connect() as connection:
             try:
                 try:
@@ -74,25 +87,29 @@ class HomeMessagesDB:
                     FOREIGN KEY (name) 
                         REFERENCES smartthings (name)
                     )""")
-                except:
-                    raise Exception as e:
-                        print(f"SQL CREATE function failed: {e}")
+                 except Exception as e:
+                    logging.error(f"SQL CREATE function failed: {e}")
+                    raise e
                 try:
                     pd.to_sql(devices, db.connect(), if_exist="append", index=False)
-                except:
-                    raise Exception as e:
-                        print(f"Pandas could not insert table {file_name} in the database: {e}")
-            except:
-                raise Exception as e:
-                    print(f"Could not insert table {file_name} into the database: {e}")
+                 except Exception as e:
+                    logging.error(f"Pandas could not insert table {file_name} in the database: {e}")
+                    raise e
+             except Exception as e:
+                    logging.error(f"Could not insert table {file_name} in the database: {e}")
+                    raise e
         
     def insert_table_p1e(file_name):
         """
         Create p1e table if it does not exist
         """
+        # Importing the data
         p1e = pd.read_csv(file_name)
+
+        # Preparing the data
         p1e["epoch"] = p1e["epoch"].timestamp()
 
+        # Inserting the table into the database
         with db.connect() as connection:
             try:
                 try:
@@ -103,17 +120,25 @@ class HomeMessagesDB:
                     ExportT1kWh NUMERIC,
                     ExportT2kWh NUMERIC,
                     )""")
-                except:
-                    raise Exception as e:
-                        print(f"SQL CREATE function failed: {e}")
+                 except Exception as e:
+                    logging.error(f"SQL CREATE function failed: {e}")
+                    raise e
                 try:
                     pd.to_sql(p1e, db.connect(), if_exist="append", index=False)
-                except:
-                    raise Exception as e:
-                        print(f"Pandas could not insert table {file_name} in the database: {e}")
-            except:
-                raise Exception as e:
-                    print(f"Could not insert table {file_name} into the database: {e}")
+                except Exception as e:
+                    logging.error(f"Pandas could not insert table {file_name} in the database: {e}")
+                    raise e
+             except Exception as e:
+                    logging.error(f"Could not insert table {file_name} in the database: {e}")
+                    raise e
+        query = sa.text("SELECT tableName FROM sqlite_master WHERE type='table' AND tableName='smartthings'")
+            with db.connect() as connection:
+                tables = connection.execute(query).fetchall()
+                if "smartthings" in tables:
+                    connection.execute('''ALTER TABLE p1e
+                             ADD CONSTRAINT fk_p1e_smartthings
+                             FOREIGN KEY (epoch) 
+                                 REFERENCES smartthings (epoch)''')
         
     def insert_table_p1g(file_name):
         """
@@ -129,20 +154,26 @@ class HomeMessagesDB:
                     epoch INTEGER PRIMARY KEY,
                     Total_gas_used NUMERIC,
                 )""")
-                except:
-                    raise Exception as e:
-                        print(f"SQL CREATE function failed: {e}")
+                 except Exception as e:
+                    logging.error(f"SQL CREATE function failed: {e}")
+                    raise e
                 try:
                     pd.to_sql(p1g, db.connect(), if_exist="append", index=False)
-                except:
-                    raise Exception as e:
-                        print(f"Pandas could not insert table {file_name} in the database: {e}")
-            except:
-                raise Exception as e:
-                    print(f"Could not insert table {file_name} into the database: {e}")
-        %%sql
+                except Exception as e:
+                    logging.error(f"Pandas could not insert table {file_name} in the database: {e}")
+                    raise e
+             except Exception as e:
+                    logging.error(f"Could not insert table {file_name} in the database: {e}")
+                    raise e   
         
-    
+        query = sa.text("SELECT tableName FROM sqlite_master WHERE type='table' AND tableName='smartthings'")
+            with db.connect() as connection:
+                tables = connection.execute(query).fetchall()
+                if "smartthings" in tables:
+                    connection.execute('''ALTER TABLE p1g
+                             ADD CONSTRAINT fk_p1g_smartthings
+                             FOREIGN KEY (epoch) 
+                                 REFERENCES smartthings (epoch)''')
         
 # if is_zipfile(file_name):
 #            try:
