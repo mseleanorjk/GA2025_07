@@ -19,7 +19,7 @@ class HomeMessagesDB:
         """
         Create Database if it doesn't exist
         """
-        db = create_engine(self.url)
+        db = sa.create_engine(self.url)
             
     def insert_table_smartthings(file_name):
         """
@@ -63,9 +63,9 @@ class HomeMessagesDB:
 
         # Creating foreign keys only for the tables that exist
         for table in ["p1e","p1g"]:
-            query = sa.text(f"SELECT tableName FROM sqlite_master WHERE type='table' AND tableName='{table}'")
+            table_names = sa.text(f"SELECT tableName FROM sqlite_master WHERE type='table' AND tableName='{table}'")
             with db.connect() as connection:
-                tables = connection.execute(query).fetchall()
+                tables = connection.execute(table_names).fetchall()
                 if table in tables:
                     connection.execute(f'''ALTER TABLE smartthings
                             ADD CONSTRAINT fk_smartthings_{table}
@@ -108,6 +108,8 @@ class HomeMessagesDB:
 
         # Preparing the data
         p1e["epoch"] = p1e["epoch"].timestamp()
+        for column in p1e:
+            p1e.rename(columns = {column : column.replace(" ", "_")}, inplace = True)
 
         # Inserting the table into the database
         with db.connect() as connection:
@@ -135,9 +137,11 @@ class HomeMessagesDB:
             except Exception as e:
                     logging.error(f"Could not insert table {file_name} in the database: {e}")
                     raise e
-        query = sa.text("SELECT tableName FROM sqlite_master WHERE type='table' AND tableName='smartthings'")
+
+        # Handling the foreign key
+        table_names = sa.text("SELECT tableName FROM sqlite_master WHERE type='table' AND tableName='smartthings'")
         with db.connect() as connection:
-            tables = connection.execute(query).fetchall()
+            tables = connection.execute(table_names).fetchall()
             if "smartthings" in tables:
                 connection.execute('''ALTER TABLE p1e
                         ADD CONSTRAINT fk_p1e_smartthings
@@ -148,9 +152,15 @@ class HomeMessagesDB:
         """
         Create p1g table if it does not exist
         """
+        # Importing the data
         p1g = pd.read_csv(file_name)
-        p1g["epoch"] = p1g["epoch"].timestamp()
 
+        # Preparing the data
+        p1g["epoch"] = p1g["epoch"].timestamp()
+        for column in p1g:
+            p1g.rename(columns = {column : column.replace(" ", "_")}, inplace = True)
+
+        # Inserting the table into the database
         with db.connect() as connection:
             try:
                 try:
@@ -169,10 +179,11 @@ class HomeMessagesDB:
             except Exception as e:
                 logging.error(f"Could not insert table {file_name} in the database: {e}")
                 raise e   
-        
-        query = sa.text("SELECT tableName FROM sqlite_master WHERE type='table' AND tableName='smartthings'")
+
+        # Handling the foreign key
+        table_names = sa.text("SELECT tableName FROM sqlite_master WHERE type='table' AND tableName='smartthings'")
         with db.connect() as connection:
-            tables = connection.execute(query).fetchall()
+            tables = connection.execute(table_names).fetchall()
             if "smartthings" in tables:
                 connection.execute('''ALTER TABLE p1g
                         ADD CONSTRAINT fk_p1g_smartthings

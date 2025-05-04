@@ -19,7 +19,7 @@ class HomeMessagesDB:
         """
         Create Database if it doesn't exist
         """
-        db = create_engine(self.url)
+        db = sa.create_engine(self.url)
             
     def insert_table_smartthings(file_name):
         """
@@ -49,9 +49,9 @@ class HomeMessagesDB:
                     value_int NUMERIC,
                     value_str TEXT
                     )""")
-                except:
-                    raise Exception as e:
-                        print(f"SQL CREATE function failed: {e}")
+                except Exception as e:
+                    logging.error(f"SQL CREATE function failed: {e}")
+                    raise e
                 try:
                     pd.to_sql(smartthings, db.connect(), if_exist="append", index=True, index_label="id")
                 except Exception as e:
@@ -63,14 +63,14 @@ class HomeMessagesDB:
 
         # Creating foreign keys only for the tables that exist
         for table in ["p1e","p1g"]:
-            query = sa.text(f"SELECT tableName FROM sqlite_master WHERE type='table' AND tableName='{table}'")
+            table_names = sa.text(f"SELECT tableName FROM sqlite_master WHERE type='table' AND tableName='{table}'")
             with db.connect() as connection:
-                tables = connection.execute(query).fetchall()
+                tables = connection.execute(table_names).fetchall()
                 if table in tables:
                     connection.execute(f'''ALTER TABLE smartthings
-                             ADD CONSTRAINT fk_smartthings_{table}
-                             FOREIGN KEY (epoch) 
-                                 REFERENCES {table} (epoch)''')
+                            ADD CONSTRAINT fk_smartthings_{table}
+                            FOREIGN KEY (epoch) 
+                                REFERENCES {table} (epoch)''')
         
         # Preparing the devices table, which contains information about the devices
         devices.drop(df.columns.difference(["loc","level","name"]), axis=1, inplace=True)
@@ -87,15 +87,15 @@ class HomeMessagesDB:
                     FOREIGN KEY (name) 
                         REFERENCES smartthings (name)
                     )""")
-                 except Exception as e:
+                except Exception as e:
                     logging.error(f"SQL CREATE function failed: {e}")
                     raise e
                 try:
                     pd.to_sql(devices, db.connect(), if_exist="append", index=False)
-                 except Exception as e:
+                except Exception as e:
                     logging.error(f"Pandas could not insert table {file_name} in the database: {e}")
                     raise e
-             except Exception as e:
+            except Exception as e:
                     logging.error(f"Could not insert table {file_name} in the database: {e}")
                     raise e
         
@@ -108,6 +108,8 @@ class HomeMessagesDB:
 
         # Preparing the data
         p1e["epoch"] = p1e["epoch"].timestamp()
+        for column in p1e:
+            p1e.rename(columns = {column : column.replace(" ", "_")}, inplace = True)
 
         # Inserting the table into the database
         with db.connect() as connection:
@@ -115,12 +117,16 @@ class HomeMessagesDB:
                 try:
                     connection.execute("""CREATE TABLE IF NOT EXISTS p1e (
                     epoch INTEGER PRIMARY KEY,
-                    ImportT1kWh NUMERIC,
-                    ImportT2kWh NUMERIC,
-                    ExportT1kWh NUMERIC,
-                    ExportT2kWh NUMERIC,
+                    Import_T1_kWh NUMERIC,
+                    Import_T2_kWh NUMERIC,
+                    Export_T1_kWh NUMERIC,
+                    Export_T2_kWh NUMERIC,
+                    Electricity_imported_T1 NUMERIC,
+                    Electricity_imported_T2 NUMERIC,
+                    Electricity_exported_T1 NUMERIC,
+                    Electricity_exported_T2 NUMERIC,
                     )""")
-                 except Exception as e:
+                except Exception as e:
                     logging.error(f"SQL CREATE function failed: {e}")
                     raise e
                 try:
@@ -128,25 +134,33 @@ class HomeMessagesDB:
                 except Exception as e:
                     logging.error(f"Pandas could not insert table {file_name} in the database: {e}")
                     raise e
-             except Exception as e:
+            except Exception as e:
                     logging.error(f"Could not insert table {file_name} in the database: {e}")
                     raise e
-        query = sa.text("SELECT tableName FROM sqlite_master WHERE type='table' AND tableName='smartthings'")
-            with db.connect() as connection:
-                tables = connection.execute(query).fetchall()
-                if "smartthings" in tables:
-                    connection.execute('''ALTER TABLE p1e
-                             ADD CONSTRAINT fk_p1e_smartthings
-                             FOREIGN KEY (epoch) 
-                                 REFERENCES smartthings (epoch)''')
+
+        # Handling the foreign key
+        table_names = sa.text("SELECT tableName FROM sqlite_master WHERE type='table' AND tableName='smartthings'")
+        with db.connect() as connection:
+            tables = connection.execute(table_names).fetchall()
+            if "smartthings" in tables:
+                connection.execute('''ALTER TABLE p1e
+                        ADD CONSTRAINT fk_p1e_smartthings
+                        FOREIGN KEY (epoch) 
+                        REFERENCES smartthings (epoch)''')
         
     def insert_table_p1g(file_name):
         """
         Create p1g table if it does not exist
         """
+        # Importing the data
         p1g = pd.read_csv(file_name)
-        p1g["epoch"] = p1g["epoch"].timestamp()
 
+        # Preparing the data
+        p1g["epoch"] = p1g["epoch"].timestamp()
+        for column in p1g:
+            p1g.rename(columns = {column : column.replace(" ", "_")}, inplace = True)
+
+        # Inserting the table into the database
         with db.connect() as connection:
             try:
                 try:
@@ -154,7 +168,7 @@ class HomeMessagesDB:
                     epoch INTEGER PRIMARY KEY,
                     Total_gas_used NUMERIC,
                 )""")
-                 except Exception as e:
+                except Exception as e:
                     logging.error(f"SQL CREATE function failed: {e}")
                     raise e
                 try:
@@ -162,18 +176,19 @@ class HomeMessagesDB:
                 except Exception as e:
                     logging.error(f"Pandas could not insert table {file_name} in the database: {e}")
                     raise e
-             except Exception as e:
-                    logging.error(f"Could not insert table {file_name} in the database: {e}")
-                    raise e   
-        
-        query = sa.text("SELECT tableName FROM sqlite_master WHERE type='table' AND tableName='smartthings'")
-            with db.connect() as connection:
-                tables = connection.execute(query).fetchall()
-                if "smartthings" in tables:
-                    connection.execute('''ALTER TABLE p1g
-                             ADD CONSTRAINT fk_p1g_smartthings
-                             FOREIGN KEY (epoch) 
-                                 REFERENCES smartthings (epoch)''')
+            except Exception as e:
+                logging.error(f"Could not insert table {file_name} in the database: {e}")
+                raise e   
+
+        # Handling the foreign key
+        table_names = sa.text("SELECT tableName FROM sqlite_master WHERE type='table' AND tableName='smartthings'")
+        with db.connect() as connection:
+            tables = connection.execute(table_names).fetchall()
+            if "smartthings" in tables:
+                connection.execute('''ALTER TABLE p1g
+                        ADD CONSTRAINT fk_p1g_smartthings
+                        FOREIGN KEY (epoch) 
+                        REFERENCES smartthings (epoch)''')
         
 # if is_zipfile(file_name):
 #            try:
