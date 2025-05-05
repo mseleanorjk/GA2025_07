@@ -135,7 +135,7 @@ class HomeMessagesDB:
                 try:
                     smartthings.to_sql("smartthings", connection, if_exists="append", index=False)
                 except Exception as e:
-                    logging.error(f"Could not insert table {file_name} in the database {self.url}: {e}")
+                    logging.error(f"Could not insert data {file_name} in the smartthings table in the database {self.url}: {e}")
                     raise e
         
         # Preparing the devices table, which contains information about the devices
@@ -158,7 +158,7 @@ class HomeMessagesDB:
         Insert data from the csv files into the P1e table
 
         Parameters:
-        - self.db: The enging variable needed to start the connection
+        - self.db: The engine variable needed to start the connection
         - file_name: The name of the file containing the data to be inserted into the database
         """
         # Importing the data
@@ -183,7 +183,7 @@ class HomeMessagesDB:
                     add_file_query = sa.text(f"INSERT INTO tracking (file_name) VALUES ('{file_name}')")
                     connection.execute(add_file_query)
                 except Exception as e:
-                    logging.error(f"Could not insert table {file_name} in the database {self.url}: {e}")
+                    logging.error(f"Could not insert data {file_name} in the P1e table in the database {self.url}: {e}")
                     raise e
         
     def insert_table_P1g(self, file_name):
@@ -215,10 +215,10 @@ class HomeMessagesDB:
                     add_file_query = sa.text(f"INSERT INTO tracking (file_name) VALUES ('{file_name}')")
                     connection.execute(add_file_query)
                 except Exception as e:
-                    logging.error(f"Pandas could not insert table {file_name} in the database {self.url}: {e}")
+                    logging.error(f"Could not insert data {file_name} in the P1g table in the database {self.url}: {e}")
                     raise e 
 
-    def query_db(self, query):
+    def query_db(self, query, save_file = False):
         """
         Function handling queries to the database. 
         Input SQL code as string, returns a pandas dataframe with the query and allows saving query result as csv.
@@ -226,6 +226,7 @@ class HomeMessagesDB:
         Parameters:
         - self.db: The engine variable needed to start the connection
         - query: The desired query to be carried out
+        - save_file: Option to save the file as a CSV, default to False
         """
         # Querying and printing the result
         with self.db.connect() as connection:
@@ -242,8 +243,7 @@ class HomeMessagesDB:
             raise e
 
         # Option to save the result
-        save_file = input("\nWould you like to save the result of this query as a new file? (y/N)\t")
-        if save_file == "y":
+        if save_file:
             try:
                 file_name = (f"query_result_{datetime.now()}").replace(" ","_").replace(":","_")
                 df.to_csv(file_name)
@@ -255,7 +255,7 @@ class HomeMessagesDB:
     
     def drop_table(self, table_name):
         """
-        Function handling table deletions. 
+        Function handling table dropping. 
         Drops table from database and removes the corresponding file name from the 'tracking' table.
 
         Parameters:
@@ -276,3 +276,24 @@ class HomeMessagesDB:
                     connection.execute(delete_query)
                 else:
                     logging.error(f"Table {table_name} does not exist in the database {self.url}.")
+
+    def erase_table(self, table_name):
+        """
+        Function handling table deletions. 
+        Deletes the data from the table and removes the corresponding file name from the 'tracking' table.
+
+        Parameters:
+        - self.db: The engine variable needed to start the connection
+        - table_name: The name of the table to delete the data from
+        """
+        with self.db.begin() as connection:
+            table_names = sa.text(f"SELECT name FROM sqlite_master WHERE type='table' and tbl_name = '{table_name}'")
+            tables = connection.execute(table_names).fetchone()
+            if tables:
+                erase_query = sa.text(f"DELETE FROM {table_name} WHERE 1=1")
+                connection.execute(erase_query)
+                print(f"Data in table {table_name} deleted successfully")
+                delete_query = sa.text(f"DELETE FROM tracking WHERE file_name LIKE '%{table_name}%'")
+                connection.execute(delete_query)
+            else:
+                logging.error(f"Table {table_name} does not exist in the database {self.url}.")
