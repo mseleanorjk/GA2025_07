@@ -241,7 +241,8 @@ class HomeMessagesDB:
         # Option to save the result
         save_file = input("\nWould you like to save the result of this query as a new file? (y/N)\t")
         if save_file == "y":
-            df.to_csv(f"query_result_{datetime.now()}")
+            file_name = f"query_result_{datetime.now()}"
+            df.to_csv(file_name.replace(" ", "_"))
         return(df)
     
     def drop_table(self, table_name):
