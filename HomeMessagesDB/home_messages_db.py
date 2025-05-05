@@ -19,7 +19,7 @@ class HomeMessagesDB:
         
     def create_db(self):
         """
-        Create Database if it doesn't exist
+        Create Database with (empty) tables if it doesn't exist. Else connect to the database.
         """
         # Connecting to the db
         self.db = sa.create_engine(self.url)
@@ -90,7 +90,7 @@ class HomeMessagesDB:
 
     def insert_table_smartthings(self,file_name):
         """
-        Create (if it doesnt exist) tables of smart things and devices
+        Insert data from tsv files into the smartthings table
         """
         # Importing the data with Pandas
         smartthings = pd.read_csv(file_name, sep="\t")
@@ -136,7 +136,7 @@ class HomeMessagesDB:
         
     def insert_table_p1e(self, file_name):
         """
-        Create p1e table if it does not exist
+        Insert data from the csv files into the p1e table
         """
         # Importing the data
         p1e = pd.read_csv(file_name)
@@ -166,7 +166,7 @@ class HomeMessagesDB:
         
     def insert_table_p1g(self, file_name):
         """
-        Create p1g table if it does not exist
+        Insert data from the csv files into the p1g table
         """
         # Importing the data
         p1g = pd.read_csv(file_name)
@@ -194,7 +194,7 @@ class HomeMessagesDB:
 
     def query_db(self, query):
         """
-        Function handling queries to the database
+        Function handling queries to the database. Input SQL code as string, returns a pandas dataframe with the query and allows saving query result as csv.
         """
         # Querying and printing the result
         with self.db.connect() as connection:
@@ -224,7 +224,7 @@ class HomeMessagesDB:
     
     def drop_table(self, table_name):
         """
-        Function handling table deletions
+        Function handling table deletions. Drops table from database and removes the corresponding files from json.
         """
         with self.db.connect() as connection:
             table_names = sa.text(f"SELECT name FROM sqlite_master WHERE type='table' and tbl_name = '{table_name}'")
