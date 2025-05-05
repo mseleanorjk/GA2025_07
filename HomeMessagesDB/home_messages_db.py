@@ -226,6 +226,7 @@ class HomeMessagesDB:
                     logging.info("Foreign key to table 'smartthings' created successfully")
                 except Exception as e:
                     logging.error(f"Could not create foreign key to 'smartthings': {e}")
+                    raise e
             else:
                 logging.info("Table 'smartthings' does not exist.")
 
@@ -235,14 +236,28 @@ class HomeMessagesDB:
         """
         # Querying and printing the result
         with self.db.connect() as connection:
-            result = connection.execute(query).fetchall()
-        df = pd.DataFrame(result)
+            query = sa.text(query)
+            try:
+                result = connection.execute(query).fetchall()
+            except Exception as e:
+                logging.error(f"Could not execute the requested query: {e}")
+                raise e
+        try:
+            df = pd.DataFrame(result)
+        except Exception as e:
+            logging.error(f"Could not convert the results of the query as a DataFrame: {e}")
+            raise e
 
         # Option to save the result
         save_file = input("\nWould you like to save the result of this query as a new file? (y/N)\t")
         if save_file == "y":
-            file_name = f"query_result_{datetime.now()}"
-            df.to_csv(file_name.replace(" ", "_"))
+            try:
+                file_name = f"query_result_{datetime.now()}"
+                df.to_csv(file_name.replace(" ", "_"))
+                logging.info(f"File {file_name.replace(" ", "_")} saved successfully.")
+            except Exception as e:
+                logging.error(f"Could not save file {file_name.replace(" ", "_")}: {e}")
+                raise e
         return(df)
     
     def drop_table(self, table_name):
