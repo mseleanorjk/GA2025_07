@@ -63,7 +63,7 @@ class HomeMessagesDB:
                     )""")
                     connection.execute(create_query)
                 except Exception as e:
-                    logging.error(f"SQL CREATE function failed: {e}")
+                    logging.error(f"SQL CREATE function failed for table {file_name}: {e}")
                     raise e
                 try:
                     smartthings.to_sql("smartthings", self.db.connect(), if_exists="append", index=True, index_label="id")
@@ -78,13 +78,20 @@ class HomeMessagesDB:
         for table in ["p1e","p1g"]:
             table_names = sa.text(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}'")
             with self.db.connect() as connection:
-                tables = connection.execute(table_names).fetchall()
-            #    tables = connection.GetTableNames()
-                if table in tables:
-                    connection.execute(f'''ALTER TABLE smartthings
+                tables = connection.execute(table_names).fetchone()
+                if tables:
+                    fk_smartthings = sa.text(f'''ALTER TABLE smartthings
                             ADD CONSTRAINT fk_smartthings_{table}
                             FOREIGN KEY (epoch) 
                                 REFERENCES {table} (epoch)''')
+                    try:
+                        connection.execute(fk_smartthings)
+                        logging.info(f"Foreign key to table {table} created successfully.")
+                    except Exception as e:
+                        logging.error(f"Could not create foreign key to table {table}: {e}")
+                        raise e
+                else:
+                    logging.info(f"Table {table} was not found.")
         
         # Preparing the devices table, which contains information about the devices
         devices.drop(devices.columns.difference(["loc","level","name"]), axis=1, inplace=True)
@@ -94,15 +101,16 @@ class HomeMessagesDB:
         with self.db.connect() as connection:
             try:
                 try:
-                    connection.execute("""CREATE TABLE IF NOT EXISTS devices (
+                    devices_query = sa.text("""CREATE TABLE IF NOT EXISTS devices (
                     name TEXT PRIMARY KEY,
                     level TEXT NOT NULL,
                     loc TEXT NOT NULL,
                     FOREIGN KEY (name) 
                         REFERENCES smartthings (name)
-                    )""")
+                    )"""
+                    connection.execute(devices_query)
                 except Exception as e:
-                    logging.error(f"SQL CREATE function failed: {e}")
+                    logging.error(f"SQL CREATE function failed for table {file_name}: {e}")
                     raise e
                 try:
                     pd.to_sql(devices, self.db.connect(), if_exist="append", index=False)
@@ -129,7 +137,7 @@ class HomeMessagesDB:
         with self.db.connect() as connection:
             try:
                 try:
-                    connection.execute("""CREATE TABLE IF NOT EXISTS p1e (
+                    p1e_query = sa.text("""CREATE TABLE IF NOT EXISTS p1e (
                     epoch INTEGER PRIMARY KEY,
                     Import_T1_kWh NUMERIC,
                     Import_T2_kWh NUMERIC,
@@ -139,9 +147,10 @@ class HomeMessagesDB:
                     Electricity_imported_T2 NUMERIC,
                     Electricity_exported_T1 NUMERIC,
                     Electricity_exported_T2 NUMERIC,
-                    )""")
+                    )"""
+                    connection.execute(p1e_query)
                 except Exception as e:
-                    logging.error(f"SQL CREATE function failed: {e}")
+                    logging.error(f"SQL CREATE function failed for table {file_name}: {e}")
                     raise e
                 try:
                     pd.to_sql(p1e, self.db.connect(), if_exist="append", index=False)
@@ -155,12 +164,20 @@ class HomeMessagesDB:
         # Handling the foreign key
         table_names = sa.text("SELECT name FROM sqlite_master WHERE type='table' AND name='smartthings'")
         with self.db.connect() as connection:
-            tables = connection.execute(table_names).fetchall()
-            if "smartthings" in tables:
-                connection.execute('''ALTER TABLE p1e
+            tables = connection.execute(table_names).fetchone()
+            if tables:
+                fk_p1e = sa.text('''ALTER TABLE p1e
                         ADD CONSTRAINT fk_p1e_smartthings
                         FOREIGN KEY (epoch) 
                         REFERENCES smartthings (epoch)''')
+                try:
+                    connection.execute(fk_p1e)
+                    logging.info("Foreign key to table 'smartthings' created successfully")
+                except Exception as e:
+                    logging.error(f"Could not create foreign key to table 'smartthings': {e}")
+                    raise e
+            else:
+                logging.info("Table 'smartthings' does not exist")
         
     def insert_table_p1g(self, file_name):
         """
@@ -178,12 +195,13 @@ class HomeMessagesDB:
         with self.db.connect() as connection:
             try:
                 try:
-                    connection.execute("""CREATE TABLE IF NOT EXISTS p1g (
+                    p1g_query = sa.text("""CREATE TABLE IF NOT EXISTS p1g (
                     epoch INTEGER PRIMARY KEY,
                     Total_gas_used NUMERIC,
                 )""")
+                    connection.execute(p1g_query)
                 except Exception as e:
-                    logging.error(f"SQL CREATE function failed: {e}")
+                    logging.error(f"SQL CREATE function failed for table {file_name}: {e}")
                     raise e
                 try:
                     pd.to_sql(p1g, self.db.connect(), if_exist="append", index=False)
@@ -197,12 +215,19 @@ class HomeMessagesDB:
         # Handling the foreign key
         table_names = sa.text("SELECT name FROM sqlite_master WHERE type='table' AND name='smartthings'")
         with self.db.connect() as connection:
-            tables = connection.execute(table_names).fetchall()
-            if "smartthings" in tables:
-                connection.execute('''ALTER TABLE p1g
+            tables = connection.execute(table_names).fetchone()
+            if tables:
+                fk_p1g = sa.text('''ALTER TABLE p1g
                         ADD CONSTRAINT fk_p1g_smartthings
                         FOREIGN KEY (epoch) 
                         REFERENCES smartthings (epoch)''')
+                try:
+                    connection.execute(fk_p1g)
+                    logging.info("Foreign key to table 'smartthings' created successfully")
+                except Exception as e:
+                    logging.error(f"Could not create foreign key to 'smartthings': {e}")
+            else:
+                logging.info("Table 'smartthings' does not exist.")
 
     def query_db(self, query):
         """
