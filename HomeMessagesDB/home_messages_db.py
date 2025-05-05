@@ -211,13 +211,14 @@ class HomeMessagesDB:
         # Querying and printing the result
         with self.db.connect() as connection:
             result = connection.execute(query).fetchall()
-        print(result)
+        df = pd.DataFrame(result)
 
         # Option to save the result
         save_file = input("\nWould you like to save the result of this query as a new file? (y/N)\t")
         if save_file == "y":
-            result.to_csv(f"query_result_{datetime.now()}")
-
+            df.to_csv(f"query_result_{datetime.now()}")
+        return(df)
+    
     def drop_table(self, table_name):
         """
         Function handling table deletions
