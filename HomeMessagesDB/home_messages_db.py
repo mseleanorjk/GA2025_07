@@ -83,9 +83,13 @@ class HomeMessagesDB:
                     fk_smartthings = sa.text(f'''ALTER TABLE smartthings
                             ADD CONSTRAINT fk_smartthings_{table}
                             FOREIGN KEY (epoch) 
-                                REFERENCES {table} (epoch)'''
-                    connection.execute(fk_smartthings)
-                    logging.info(f"Foreign key to table {table} created successfully.")
+                                REFERENCES {table} (epoch)''')
+                    try:
+                        connection.execute(fk_smartthings)
+                        logging.info(f"Foreign key to table {table} created successfully.")
+                    except Exception as e:
+                        logging.error(f"Could not create foreign key to table {table}: {e}")
+                        raise e
                 else:
                     logging.info(f"Table {table} was not found.")
         
@@ -165,8 +169,15 @@ class HomeMessagesDB:
                 fk_p1e = sa.text('''ALTER TABLE p1e
                         ADD CONSTRAINT fk_p1e_smartthings
                         FOREIGN KEY (epoch) 
-                        REFERENCES smartthings (epoch)'''
-                connection.execute(fk_p1e)
+                        REFERENCES smartthings (epoch)''')
+                try:
+                    connection.execute(fk_p1e)
+                    logging.info("Foreign key to table 'smartthings' created successfully")
+                except Exception as e:
+                    logging.error(f"Could not create foreign key to table 'smartthings': {e}")
+                    raise e
+            else:
+                logging.info("Table 'smartthings' does not exist")
         
     def insert_table_p1g(self, file_name):
         """
@@ -210,8 +221,11 @@ class HomeMessagesDB:
                         ADD CONSTRAINT fk_p1g_smartthings
                         FOREIGN KEY (epoch) 
                         REFERENCES smartthings (epoch)''')
-                connection.execute(fk_p1g)
-                logging.info("Foreign key to table 'smartthings' created successfully")
+                try:
+                    connection.execute(fk_p1g)
+                    logging.info("Foreign key to table 'smartthings' created successfully")
+                except Exception as e:
+                    logging.error(f"Could not create foreign key to 'smartthings': {e}")
             else:
                 logging.info("Table 'smartthings' does not exist.")
 
