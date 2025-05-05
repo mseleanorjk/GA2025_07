@@ -98,7 +98,7 @@ class HomeMessagesDB:
             # Creating empty table for csv tracking
             try:
                 tracking_query = sa.text("""CREATE TABLE IF NOT EXISTS tracking (
-                file_name TEXT PRIMARY KEY,
+                file_name TEXT PRIMARY KEY
                 )""")
                 connection.execute(tracking_query)
             except Exception as e:
@@ -110,7 +110,7 @@ class HomeMessagesDB:
         Insert data from tsv files into the smartthings table
 
         Parameters:
-        - self.db: The enging variable needed to start the connection
+        - self.db: The engine variable needed to start the connection
         - file_name: The name of the file containing the data to be inserted into the database
         """
         # Importing the data with Pandas
@@ -125,7 +125,7 @@ class HomeMessagesDB:
         smartthings.drop(["loc","level", "value"], inplace=True, axis = 1)
 
         # Inserting the table in the database
-        check_query = sa.text(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{file_name}'")
+        check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
         with self.db.connect() as connection:
             result = connection.execute(check_query).fetchone()
             if result:
@@ -171,24 +171,24 @@ class HomeMessagesDB:
             p1e.rename(columns = {column : column.replace(" ", "_")}, inplace = True)
 
         # Inserting the table into the database
-        check_query = sa.text(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{file_name}'")
+        check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
         with self.db.connect() as connection:
             result = connection.execute(check_query).fetchone()
             if result:
                 logging.info(f"{file_name} was already appended to table 'p1e'")
             else:
                 try:
-                p1e.to_sql("p1e", self.db.connect(), if_exists="append", index=False)
-            except Exception as e:
-                logging.error(f"Could not insert table {file_name} in the database {self.url}: {e}")
-                raise e
+                    p1e.to_sql("p1e", self.db.connect(), if_exists="append", index=False)
+                except Exception as e:
+                    logging.error(f"Could not insert table {file_name} in the database {self.url}: {e}")
+                    raise e
         
     def insert_table_p1g(self, file_name):
         """
         Insert data from the csv files into the p1g table.
 
         Parameters:
-        - self.db: The enging variable needed to start the connection
+        - self.db: The engine variable needed to start the connection
         - file_name: The name of the file containing the data to be inserted into the database
         """
         # Importing the data
@@ -200,7 +200,7 @@ class HomeMessagesDB:
             p1g.rename(columns = {column : column.replace(" ", "_")}, inplace = True)
 
         # Inserting the table into the database
-        check_query = sa.text(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{file_name}'")
+        check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
         with self.db.connect() as connection:
             result = connection.execute(check_query).fetchone()
             if result:
@@ -218,7 +218,7 @@ class HomeMessagesDB:
         Input SQL code as string, returns a pandas dataframe with the query and allows saving query result as csv.
 
         Parameters:
-        - self.db: The enging variable needed to start the connection
+        - self.db: The engine variable needed to start the connection
         - query: The desired query to be carried out
         """
         # Querying and printing the result
@@ -253,15 +253,16 @@ class HomeMessagesDB:
         Drops table from database and removes the corresponding file name from the 'tracking' table.
 
         Parameters:
-        - self.db: The enging variable needed to start the connection
+        - self.db: The engine variable needed to start the connection
         - table_name: The name of the table to be dropped
         """
         with self.db.connect() as connection:
             table_names = sa.text(f"SELECT name FROM sqlite_master WHERE type='table' and tbl_name = '{table_name}'")
             tables = connection.execute(table_names).fetchone()
-            if table_name:
+            if tables:
                 drop_query = sa.text(f"DROP TABLE {table_name}")
                 connection.execute(drop_query)
                 print("Table dropped successfully")
+                delete_query = sa.text(f"DELETE FROM tracking WHERE file_name LIKE '%{table_name}%'")
             else:
                 logging.error(f"Table {table_name} does not exist in the database {self.url}.")
