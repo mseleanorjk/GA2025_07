@@ -112,11 +112,19 @@ class HomeMessagesDB:
                 except Exception as e:
                     logging.error(f"SQL CREATE function failed for table {file_name}: {e}")
                     raise e
-                try:
-                    devices.to_sql("devices", self.db.connect(), if_exist="append", index=False)
-                except Exception as e:
-                    logging.error(f"Pandas could not insert table {file_name} in the database {self.url}: {e}")
-                    raise e
+                for i in range(devices.shape[0]):
+                    insert_query = sa.text(f"""INSERT OR REPLACE INTO devices (name, level, loc) 
+                        VALUES ({devices.loc[i,"name"]}, {devices.loc[i,"level"]}, {devices.loc[i,"loc"]})""")
+                    try:
+                        connection.execute(insert_query)
+                    except Exception as e:
+                        logging.error(f"Could not insert device {devices.loc[i,"name"]}: {e}")
+                        raise e
+#                try:
+#                    devices.to_sql("devices", self.db.connect(), if_exist="append", index=False)
+#                except Exception as e:
+#                    logging.error(f"Pandas could not insert table {file_name} in the database {self.url}: {e}")
+#                    raise e
             except Exception as e:
                     logging.error(f"Could not insert table {file_name} in the database {self.url}: {e}")
                     raise e
