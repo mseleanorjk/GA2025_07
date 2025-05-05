@@ -113,7 +113,7 @@ class HomeMessagesDB:
                     logging.error(f"SQL CREATE function failed for table {file_name}: {e}")
                     raise e
                 try:
-                    devices.to_sql("devices", self.db.connect(), if_exist="append", index=False)
+                    devices.to_sql("devices", self.db.connect(), if_exists="append", index=False)
                 except Exception as e:
                     logging.error(f"Pandas could not insert table {file_name} in the database {self.url}: {e}")
                     raise e
@@ -153,7 +153,7 @@ class HomeMessagesDB:
                     logging.error(f"SQL CREATE function failed for table {file_name}: {e}")
                     raise e
                 try:
-                    p1e.to_sql("p1e", self.db.connect(), if_exist="append", index=False)
+                    p1e.to_sql("p1e", self.db.connect(), if_exists="append", index=False)
                 except Exception as e:
                     logging.error(f"Pandas could not insert table {file_name} in the database {self.url}: {e}")
                     raise e
@@ -204,7 +204,7 @@ class HomeMessagesDB:
                     logging.error(f"SQL CREATE function failed for table {file_name}: {e}")
                     raise e
                 try:
-                    p1g.to_sql("p1g", self.db.connect(), if_exist="append", index=False)
+                    p1g.to_sql("p1g", self.db.connect(), if_exists="append", index=False)
                 except Exception as e:
                     logging.error(f"Pandas could not insert table {file_name} in the database {self.url}: {e}")
                     raise e
