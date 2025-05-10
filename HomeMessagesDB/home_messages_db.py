@@ -150,7 +150,7 @@ class HomeMessagesDB:
                 try:
                     connection.execute(insert_query)
                 except Exception as e:
-                    logging.error(f"Could not insert device {devices.loc[i,"name"]}: {e}")
+                    logging.error(f'Could not insert device {devices.loc[i,"name"]}: {e}')
                     raise e
         
     def insert_table_P1e(self, file_name):
