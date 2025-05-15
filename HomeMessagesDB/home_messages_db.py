@@ -121,9 +121,9 @@ class HomeMessagesDB:
         self.db = sa.create_engine(self.url)
 
         # Creating empty tables
-        create_smartthings_table()
-        create_p1e_table()
-        create_p1g_table()
+        create_smartthings_table(self)
+        create_p1e_table(self)
+        create_p1g_table(self)
 
         # Create tracking table
         try:
@@ -155,7 +155,7 @@ class HomeMessagesDB:
         smartthings.drop(["loc","level", "value"], inplace=True, axis = 1)
 
         # Create table if it was dropped
-        create_smartthings_table()
+        create_smartthings_table(self)
 
         # Inserting the table in the database
         check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
@@ -210,7 +210,7 @@ class HomeMessagesDB:
                         'Electricity_exported_T2'])
 
         # Create table if it was dropped
-        create_p1e_table()
+        create_p1e_table(self)
 
         # Inserting the table into the database
         check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
@@ -246,7 +246,7 @@ class HomeMessagesDB:
         P1g.dropna(inplace=True)
 
         # Create table if it was dropped
-        create_p1g_table()
+        create_p1g_table(self)
 
         # Inserting the table into the database
         check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
