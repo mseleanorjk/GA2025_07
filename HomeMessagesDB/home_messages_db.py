@@ -23,7 +23,7 @@ class HomeMessagesDB:
         with self.db.connect() as connection:
             try:
                 create_query = sa.text("""CREATE TABLE IF NOT EXISTS smartthings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
                 epoch TEXT NOT NULL,
                 capability TEXT NOT NULL,
@@ -129,19 +129,20 @@ class HomeMessagesDB:
         self.db = sa.create_engine(self.url)
 
         # Creating empty tables
-        create_smartthings_table()
-        create_p1e_table()
-        create_p1g_table()
+        self.create_smartthings_table()
+        self.create_p1e_table()
+        self.create_p1g_table()
 
         # Create tracking table
-        try:
-            tracking_query = sa.text("""CREATE TABLE IF NOT EXISTS tracking (
-            file_name TEXT PRIMARY KEY
-            )""")
-            connection.execute(tracking_query)
-        except Exception as e:
-            logging.error(f"SQL CREATE function failed for table 'tracking': {e}")
-            raise e
+        with self.db.begin() as connection:
+            try:
+                tracking_query = sa.text("""CREATE TABLE IF NOT EXISTS tracking (
+                file_name TEXT PRIMARY KEY
+                )""")
+                connection.execute(tracking_query)
+            except Exception as e:
+                logging.error(f"SQL CREATE function failed for table 'tracking': {e}")
+                raise e
 
     def insert_table_smartthings(self,file_name):
         """
@@ -163,7 +164,7 @@ class HomeMessagesDB:
         smartthings.drop(["loc","level", "value"], inplace=True, axis = 1)
 
         # Create table if it was dropped
-        create_smartthings_table()
+        self.create_smartthings_table()
 
         # Inserting the table in the database
         check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
@@ -212,17 +213,10 @@ class HomeMessagesDB:
         
         for column in P1e:
             P1e.rename(columns = {column : column.replace(" ", "_")}, inplace = True)
-        P1e.dropna(inplace=True, how= 'all', subset=['Import_T1_kWh',
-                        'Import_T2_kWh',
-                        'Export_T1_kWh',
-                        'Export_T2_kWh',
-                        'Electricity_imported_T1',
-                        'Electricity_imported_T2',
-                        'Electricity_exported_T1',
-                        'Electricity_exported_T2'])
+        P1e.dropna(inplace=True, how= 'all', subset=['Electricity_imported_T1','Electricity_imported_T2','Electricity_exported_T1','Electricity_exported_T2'])
 
         # Create table if it was dropped
-        create_p1e_table()
+        self.create_p1e_table()
 
         # Inserting the table into the database
         check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
@@ -258,7 +252,7 @@ class HomeMessagesDB:
         P1g.dropna(inplace=True)
 
         # Create table if it was dropped
-        create_p1g_table()
+        self.create_p1g_table()
 
         # Inserting the table into the database
         check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
