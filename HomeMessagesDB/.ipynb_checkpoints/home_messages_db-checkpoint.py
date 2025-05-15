@@ -18,22 +18,12 @@ class HomeMessagesDB:
         
     def __repl__(self, url):
         return(f"The database has URL {self.url}")
-        
-    def create_db(self):
-        """
-        Create Database with (empty) tables if it doesn't exist; else connect to the database.
-        Also, creates empty tables in the database in preparation for data insertion.
 
-        Parameters:
-        - self.url: the URL pointing at the database (initialised in self)
-        """
-        # Connecting to the db
-        self.db = sa.create_engine(self.url)
-
-        # Creating empty table smartthings
+    def create_smartthings_table(self):
         with self.db.connect() as connection:
             try:
                 create_query = sa.text("""CREATE TABLE IF NOT EXISTS smartthings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT
                 name TEXT NOT NULL,
                 epoch TEXT NOT NULL,
                 capability TEXT NOT NULL,
@@ -44,10 +34,8 @@ class HomeMessagesDB:
                 )""")
                 connection.execute(create_query)
             except Exception as e:
-                logging.error(f"SQL CREATE function failed for table 'smartthings': {e}")
+                logging.error(f"SQL CREATE function failed for table 'smartthings':{e}")
                 raise e
-
-            # Creating empty table devices
             try:
                 devices_query = sa.text("""CREATE TABLE IF NOT EXISTS devices (
                 name TEXT PRIMARY KEY,
@@ -61,48 +49,99 @@ class HomeMessagesDB:
                 logging.error(f"SQL CREATE function failed for table 'devices': {e}")
                 raise e
 
-            # Creating empty table p1e
-            try:
-                p1e_query = sa.text("""CREATE TABLE IF NOT EXISTS p1e (
-                epoch INTEGER PRIMARY KEY,
-                Import_T1_kWh NUMERIC,
-                Import_T2_kWh NUMERIC,
-                Export_T1_kWh NUMERIC,
-                Export_T2_kWh NUMERIC,
-                Electricity_imported_T1 NUMERIC,
-                Electricity_imported_T2 NUMERIC,
-                Electricity_exported_T1 NUMERIC,
-                Electricity_exported_T2 NUMERIC,
-                FOREIGN KEY (epoch) 
-                    REFERENCES smartthings (epoch)
-                )""")
-                connection.execute(p1e_query)
-            except Exception as e:
-                logging.error(f"SQL CREATE function failed for table 'p1e': {e}")
-                raise e
+    def create_p1e_table(self):
+        with self.db.begin() as connection:
+                table_names = sa.text("SELECT name FROM sqlite_master WHERE type='table' and tbl_name = 'smartthings'")
+                tables = connection.execute(table_names).fetchone()
+                if tables:
+                    try:
+                        P1e_query = sa.text("""CREATE TABLE IF NOT EXISTS P1e (
+                        epoch INTEGER PRIMARY KEY,
+                        Import_T1_kWh NUMERIC,
+                        Import_T2_kWh NUMERIC,
+                        Export_T1_kWh NUMERIC,
+                        Export_T2_kWh NUMERIC,
+                        Electricity_imported_T1 NUMERIC,
+                        Electricity_imported_T2 NUMERIC,
+                        Electricity_exported_T1 NUMERIC,
+                        Electricity_exported_T2 NUMERIC,
+                        FOREIGN KEY (epoch) 
+                            REFERENCES smartthings (epoch)
+                        )""")
+                        connection.execute(P1e_query)
+                    except Exception as e:
+                        logging.error(f"SQL CREATE function failed for table 'P1e': {e}")
+                        raise e
+                else:
+                    try:
+                        P1e_query = sa.text("""CREATE TABLE IF NOT EXISTS P1e (
+                        epoch INTEGER PRIMARY KEY,
+                        Import_T1_kWh NUMERIC,
+                        Import_T2_kWh NUMERIC,
+                        Export_T1_kWh NUMERIC,
+                        Export_T2_kWh NUMERIC,
+                        Electricity_imported_T1 NUMERIC,
+                        Electricity_imported_T2 NUMERIC,
+                        Electricity_exported_T1 NUMERIC,
+                        Electricity_exported_T2 NUMERIC
+                        )""")
+                        connection.execute(P1e_query)
+                    except Exception as e:
+                        logging.error(f"SQL CREATE function failed for table 'P1e': {e}")
+                        raise e
 
-            # Creating empty table p1g
-            try:
-                p1g_query = sa.text("""CREATE TABLE IF NOT EXISTS p1g (
-                epoch INTEGER PRIMARY KEY,
-                Total_gas_used NUMERIC,
-                FOREIGN KEY (epoch) 
-                    REFERENCES smartthings (epoch)
-                )""")
-                connection.execute(p1g_query)
-            except Exception as e:
-                logging.error(f"SQL CREATE function failed for table 'p1g': {e}")
-                raise e
+    def create_p1g_table(self):
+        with self.db.begin() as connection:
+                table_names = sa.text("SELECT name FROM sqlite_master WHERE type='table' and tbl_name = 'smartthings'")
+                tables = connection.execute(table_names).fetchone()
+                if tables:
+                    try:
+                        P1g_query = sa.text("""CREATE TABLE IF NOT EXISTS P1g (
+                        epoch INTEGER PRIMARY KEY,
+                        Total_gas_used NUMERIC,
+                        FOREIGN KEY (epoch) 
+                            REFERENCES smartthings (epoch)
+                        )""")
+                        connection.execute(P1g_query)
+                    except Exception as e:
+                        logging.error(f"SQL CREATE function failed for table 'P1g': {e}")
+                        raise e
+                else:
+                    try:
+                        P1g_query = sa.text("""CREATE TABLE IF NOT EXISTS P1g (
+                        epoch INTEGER PRIMARY KEY,
+                        Total_gas_used NUMERIC
+                        )""")
+                        connection.execute(P1g_query)
+                    except Exception as e:
+                        logging.error(f"SQL CREATE function failed for table 'P1g': {e}")
+                        raise e
+        
+    def create_db(self):
+        """
+        Create Database with (empty) tables if it doesn't exist; else connect to the database.
+        Also, creates empty tables in the database in preparation for data insertion.
 
-            # Creating empty table for csv tracking
-            try:
-                tracking_query = sa.text("""CREATE TABLE IF NOT EXISTS tracking (
-                file_name TEXT PRIMARY KEY
-                )""")
-                connection.execute(tracking_query)
-            except Exception as e:
-                logging.error(f"SQL CREATE function failed for table 'tracking': {e}")
-                raise e
+        Parameters:
+        - self.url: the URL pointing at the database (initialised in self)
+        """
+        # Connecting to the db
+        self.db = sa.create_engine(self.url)
+
+        # Creating empty tables
+        create_smartthings_table()
+        create_p1e_table()
+        create_p1g_table()
+
+        # Create tracking table
+        try:
+            tracking_query = sa.text("""CREATE TABLE IF NOT EXISTS tracking (
+            file_name TEXT PRIMARY KEY
+            )""")
+            connection.execute(tracking_query)
+        except Exception as e:
+            logging.error(f"SQL CREATE function failed for table 'tracking': {e}")
+            raise e
 
     def insert_table_smartthings(self,file_name):
         """
@@ -123,19 +162,22 @@ class HomeMessagesDB:
         smartthings.loc[:, 'value_str'] = smartthings['value'].where(smartthings['value_int'].isna())
         smartthings.drop(["loc","level", "value"], inplace=True, axis = 1)
 
+        # Create table if it was dropped
+        create_smartthings_table()
+
         # Inserting the table in the database
         check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
-        with self.db.connect() as connection:
+        with self.db.begin() as connection:
             result = connection.execute(check_query).fetchone()
             if result:
                 logging.info(f"{file_name} was already appended to table 'smartthings'")
             else:
+                add_file_query = sa.text(f"INSERT INTO tracking (file_name) VALUES ('{file_name}')")
+                connection.execute(add_file_query)
                 try:
-                    smartthings.to_sql("smartthings", self.db.connect(), if_exists="append", index=False)
-                    add_file_query = sa.text(f"INSERT INTO tracking (file_name) VALUES ('{file_name}')")
-                    connection.execute(add_file_query)
+                    smartthings.to_sql("smartthings", connection, if_exists="append", index=False)
                 except Exception as e:
-                    logging.error(f"Could not insert table {file_name} in the database {self.url}: {e}")
+                    logging.error(f"Could not insert data {file_name} in the smartthings table in the database {self.url}: {e}")
                     raise e
         
         # Preparing the devices table, which contains information about the devices
@@ -150,74 +192,90 @@ class HomeMessagesDB:
                 try:
                     connection.execute(insert_query)
                 except Exception as e:
-                    logging.error(f"Could not insert device {devices.loc[i,"name"]}: {e}")
+                    logging.error(f'Could not insert device {devices.loc[i,"name"]}: {e}')
                     raise e
         
-    def insert_table_p1e(self, file_name):
+    def insert_table_P1e(self, file_name):
         """
-        Insert data from the csv files into the p1e table
-
-        Parameters:
-        - self.db: The enging variable needed to start the connection
-        - file_name: The name of the file containing the data to be inserted into the database
-        """
-        # Importing the data
-        p1e = pd.read_csv(file_name)
-
-        # Preparing the data
-        p1e["epoch"] = pd.to_datetime(p1e["time"], utc=True).astype("int64") // 10**9 
-        p1e.drop("time", axis=1,inplace = True)
-        
-        for column in p1e:
-            p1e.rename(columns = {column : column.replace(" ", "_")}, inplace = True)
-
-        # Inserting the table into the database
-        check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
-        with self.db.connect() as connection:
-            result = connection.execute(check_query).fetchone()
-            if result:
-                logging.info(f"{file_name} was already appended to table 'p1e'")
-            else:
-                try:
-                    p1e.to_sql("p1e", self.db.connect(), if_exists="append", index=False)
-                    add_file_query = sa.text(f"INSERT INTO tracking (file_name) VALUES ('{file_name}')")
-                    connection.execute(add_file_query)
-                except Exception as e:
-                    logging.error(f"Could not insert table {file_name} in the database {self.url}: {e}")
-                    raise e
-        
-    def insert_table_p1g(self, file_name):
-        """
-        Insert data from the csv files into the p1g table.
+        Insert data from the csv files into the P1e table
 
         Parameters:
         - self.db: The engine variable needed to start the connection
         - file_name: The name of the file containing the data to be inserted into the database
         """
         # Importing the data
-        p1g = pd.read_csv(file_name)
+        P1e = pd.read_csv(file_name)
 
         # Preparing the data
-        p1g["epoch"] = p1g["epoch"].timestamp()
-        for column in p1g:
-            p1g.rename(columns = {column : column.replace(" ", "_")}, inplace = True)
+        P1e["epoch"] = pd.to_datetime(P1e["time"], utc=True).astype("int64") // 10**9 
+        P1e.drop("time", axis=1,inplace = True)
+        
+        for column in P1e:
+            P1e.rename(columns = {column : column.replace(" ", "_")}, inplace = True)
+        P1e.dropna(inplace=True, how= 'all', subset=['Import_T1_kWh',
+                        'Import_T2_kWh',
+                        'Export_T1_kWh',
+                        'Export_T2_kWh',
+                        'Electricity_imported_T1',
+                        'Electricity_imported_T2',
+                        'Electricity_exported_T1',
+                        'Electricity_exported_T2'])
+
+        # Create table if it was dropped
+        create_p1e_table()
 
         # Inserting the table into the database
         check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
-        with self.db.connect() as connection:
+        with self.db.begin() as connection:
             result = connection.execute(check_query).fetchone()
             if result:
-                logging.info(f"{file_name} was already appended to table 'p1g'")
+                logging.info(f"{file_name} was already appended to table 'P1e'")
             else:
                 try:
-                    p1g.to_sql("p1g", self.db.connect(), if_exists="append", index=False)
+                    P1e.to_sql("P1e", self.db.connect(), if_exists="append", index=False)
                     add_file_query = sa.text(f"INSERT INTO tracking (file_name) VALUES ('{file_name}')")
                     connection.execute(add_file_query)
                 except Exception as e:
-                    logging.error(f"Pandas could not insert table {file_name} in the database {self.url}: {e}")
+                    logging.error(f"Could not insert data {file_name} in the P1e table in the database {self.url}: {e}")
+                    raise e
+        
+    def insert_table_P1g(self, file_name):
+        """
+        Insert data from the csv files into the P1g table.
+
+        Parameters:
+        - self.db: The engine variable needed to start the connection
+        - file_name: The name of the file containing the data to be inserted into the database
+        """
+        # Importing the data
+        P1g = pd.read_csv(file_name)
+
+        # Preparing the data
+        P1g["epoch"] = pd.to_datetime(P1g["time"], utc=True).astype("int64") // 10**9 
+        P1g.drop("time", axis=1,inplace = True)
+        for column in P1g:
+            P1g.rename(columns = {column : column.replace(" ", "_")}, inplace = True)
+        P1g.dropna(inplace=True)
+
+        # Create table if it was dropped
+        create_p1g_table()
+
+        # Inserting the table into the database
+        check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
+        with self.db.begin() as connection:
+            result = connection.execute(check_query).fetchone()
+            if result:
+                logging.info(f"{file_name} was already appended to table 'P1g'")
+            else:
+                try:
+                    P1g.to_sql("P1g", self.db.connect(), if_exists="append", index=False)
+                    add_file_query = sa.text(f"INSERT INTO tracking (file_name) VALUES ('{file_name}')")
+                    connection.execute(add_file_query)
+                except Exception as e:
+                    logging.error(f"Could not insert data {file_name} in the P1g table in the database {self.url}: {e}")
                     raise e 
 
-    def query_db(self, query):
+    def query_db(self, query, save_file = False):
         """
         Function handling queries to the database. 
         Input SQL code as string, returns a pandas dataframe with the query and allows saving query result as csv.
@@ -225,6 +283,7 @@ class HomeMessagesDB:
         Parameters:
         - self.db: The engine variable needed to start the connection
         - query: The desired query to be carried out
+        - save_file: Option to save the file as a CSV, default to False
         """
         # Querying and printing the result
         with self.db.connect() as connection:
@@ -241,8 +300,7 @@ class HomeMessagesDB:
             raise e
 
         # Option to save the result
-        save_file = input("\nWould you like to save the result of this query as a new file? (y/N)\t")
-        if save_file == "y":
+        if save_file:
             try:
                 file_name = (f"query_result_{datetime.now()}").replace(" ","_").replace(":","_")
                 df.to_csv(file_name)
@@ -254,20 +312,49 @@ class HomeMessagesDB:
     
     def drop_table(self, table_name):
         """
-        Function handling table deletions. 
+        Function handling table dropping. 
         Drops table from database and removes the corresponding file name from the 'tracking' table.
 
         Parameters:
         - self.db: The engine variable needed to start the connection
         - table_name: The name of the table to be dropped
         """
-        with self.db.connect() as connection:
+        if table_name == 'tracking':
+            logging.error("The table 'tracking cannot be dropped")
+        else:
+            with self.db.begin() as connection:
+                table_names = sa.text(f"SELECT name FROM sqlite_master WHERE type='table' and tbl_name = '{table_name}'")
+                tables = connection.execute(table_names).fetchone()
+                if tables:
+                    drop_query = sa.text(f"DROP TABLE {table_name}")
+                    connection.execute(drop_query)
+                    print("Table dropped successfully")
+                    delete_query = sa.text(f"DELETE FROM tracking WHERE file_name LIKE '%{table_name}%'")
+                    connection.execute(delete_query)
+                else:
+                    logging.error(f"Table {table_name} does not exist in the database {self.url}.")
+
+    def erase_table_content(self, table_name):
+        """
+        Function handling table deletions. 
+        Deletes the data from the table and removes the corresponding file name from the 'tracking' table.
+
+        Parameters:
+        - self.db: The engine variable needed to start the connection
+        - table_name: The name of the table to delete the data from
+        """
+        with self.db.begin() as connection:
             table_names = sa.text(f"SELECT name FROM sqlite_master WHERE type='table' and tbl_name = '{table_name}'")
             tables = connection.execute(table_names).fetchone()
             if tables:
-                drop_query = sa.text(f"DROP TABLE {table_name}")
-                connection.execute(drop_query)
-                print("Table dropped successfully")
-                delete_query = sa.text(f"DELETE FROM tracking WHERE file_name LIKE '%{table_name}%'")
+                try:
+                    erase_query = sa.text(f"DELETE FROM {table_name} WHERE 1=1")
+                    connection.execute(erase_query)
+                    delete_query = sa.text(f"DELETE FROM tracking WHERE file_name LIKE '%{table_name}%'")
+                    connection.execute(delete_query)
+                    logging.info(f"Data in table {table_name} deleted successfully")
+                except Exception as e:
+                    logging.error(f"Could not erase the content of table {table_name}: {e}")
+                    raise e
             else:
                 logging.error(f"Table {table_name} does not exist in the database {self.url}.")
