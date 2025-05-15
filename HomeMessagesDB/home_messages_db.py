@@ -209,6 +209,19 @@ class HomeMessagesDB:
                         'Electricity_imported_T2',
                         'Electricity_exported_T1',
                         'Electricity_exported_T2'])
+        
+        # Temporary table for aggregation purposes
+        with self.db.begin() as connection:
+            P1e.to_sql("temp", connection, if_exists="replace", index=False)
+            agg_query = sa.text("""SELECT epoch, 
+                        avg(Electricity_imported_T1) as Electricity_imported_T1,
+                        avg(Electricity_imported_T2) as Electricity_imported_T2,
+                        avg(Electricity_exported_T1) as Electricity_exported_T1,
+                        avg(Electricity_exported_T2) as Electricity_exported_T2
+                        FROM temp
+                        GROUP BY epoch""")
+            P1e_new = pd.read_sql(agg_query, con = connection)
+        self.drop_table("temp")
 
         # Create table if it was dropped
         self.create_p1e_table()
@@ -221,10 +234,10 @@ class HomeMessagesDB:
                 logging.info(f"{file_name} was already appended to table 'P1e'")
             else:
                 try:
-                    P1e.to_sql("P1e", self.db.connect(), if_exists="append", index=False)
+                    P1e_new.to_sql("P1e", self.db.connect(), if_exists="append", index=False)
                     add_file_query = sa.text(f"INSERT INTO tracking (file_name) VALUES ('{file_name}')")
                     connection.execute(add_file_query)
-                except Exception as e:
+                except Exception as e: 
                     logging.error(f"Could not insert data {file_name} in the P1e table in the database {self.url}: {e}")
                     raise e
         
