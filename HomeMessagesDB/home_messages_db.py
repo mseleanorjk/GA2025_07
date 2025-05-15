@@ -219,6 +219,7 @@ class HomeMessagesDB:
                         avg(Electricity_exported_T1) as Electricity_exported_T1,
                         avg(Electricity_exported_T2) as Electricity_exported_T2
                         FROM temp
+                        UNION ALL P1e
                         GROUP BY epoch""")
             P1e_new = pd.read_sql(agg_query, con = connection)
         self.drop_table("temp")

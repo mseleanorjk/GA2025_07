@@ -121,19 +121,20 @@ class HomeMessagesDB:
         self.db = sa.create_engine(self.url)
 
         # Creating empty tables
-        create_smartthings_table(self)
-        create_p1e_table(self)
-        create_p1g_table(self)
+        self.create_smartthings_table()
+        self.create_p1e_table()
+        self.create_p1g_table()
 
         # Create tracking table
-        try:
-            tracking_query = sa.text("""CREATE TABLE IF NOT EXISTS tracking (
-            file_name TEXT PRIMARY KEY
-            )""")
-            connection.execute(tracking_query)
-        except Exception as e:
-            logging.error(f"SQL CREATE function failed for table 'tracking': {e}")
-            raise e
+        with self.db.begin() as connection:
+            try:
+                tracking_query = sa.text("""CREATE TABLE IF NOT EXISTS tracking (
+                file_name TEXT PRIMARY KEY
+                )""")
+                connection.execute(tracking_query)
+            except Exception as e:
+                logging.error(f"SQL CREATE function failed for table 'tracking': {e}")
+                raise e
 
     def insert_table_smartthings(self,file_name):
         """
@@ -155,7 +156,7 @@ class HomeMessagesDB:
         smartthings.drop(["loc","level", "value"], inplace=True, axis = 1)
 
         # Create table if it was dropped
-        create_smartthings_table(self)
+        self.create_smartthings_table()
 
         # Inserting the table in the database
         check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
@@ -201,16 +202,30 @@ class HomeMessagesDB:
         # Preparing the data
         P1e["epoch"] = pd.to_datetime(P1e["time"], utc=True).astype("int64") // 10**9 
         P1e.drop("time", axis=1,inplace = True)
-        P1e.columns = ['epoch','Electricity_imported_T1','Electricity_imported_T2','Electricity_exported_T1','Electricity_exported_T2']
+        P1e.columns = ['Electricity_imported_T1','Electricity_imported_T2','Electricity_exported_T1','Electricity_exported_T2','epoch']
         
         P1e.dropna(inplace=True, how= 'all', subset=[
                         'Electricity_imported_T1',
                         'Electricity_imported_T2',
                         'Electricity_exported_T1',
                         'Electricity_exported_T2'])
+        
+        # Temporary table for aggregation purposes
+        with self.db.begin() as connection:
+            P1e.to_sql("temp", connection, if_exists="replace", index=False)
+            agg_query = sa.text("""SELECT epoch, 
+                        avg(Electricity_imported_T1) as Electricity_imported_T1,
+                        avg(Electricity_imported_T2) as Electricity_imported_T2,
+                        avg(Electricity_exported_T1) as Electricity_exported_T1,
+                        avg(Electricity_exported_T2) as Electricity_exported_T2
+                        FROM temp
+                        UNION ALL P1e
+                        GROUP BY epoch""")
+            P1e_new = pd.read_sql(agg_query, con = connection)
+        self.drop_table("temp")
 
         # Create table if it was dropped
-        create_p1e_table(self)
+        self.create_p1e_table()
 
         # Inserting the table into the database
         check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
@@ -220,10 +235,10 @@ class HomeMessagesDB:
                 logging.info(f"{file_name} was already appended to table 'P1e'")
             else:
                 try:
-                    P1e.to_sql("P1e", self.db.connect(), if_exists="append", index=False)
+                    P1e_new.to_sql("P1e", self.db.connect(), if_exists="append", index=False)
                     add_file_query = sa.text(f"INSERT INTO tracking (file_name) VALUES ('{file_name}')")
                     connection.execute(add_file_query)
-                except Exception as e:
+                except Exception as e: 
                     logging.error(f"Could not insert data {file_name} in the P1e table in the database {self.url}: {e}")
                     raise e
         
@@ -246,7 +261,7 @@ class HomeMessagesDB:
         P1g.dropna(inplace=True)
 
         # Create table if it was dropped
-        create_p1g_table(self)
+        self.create_p1g_table()
 
         # Inserting the table into the database
         check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
