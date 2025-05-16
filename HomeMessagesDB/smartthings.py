@@ -21,7 +21,7 @@ def main(d,files,query):
     db.create_db()
     
     if query:
-        click.echo('Would you like output specified on date, object or size of the database?')
+        click.echo('Would you like output specified on date, name or size of the database?')
         userinp= input()
         if userinp.lower() =='date':
             click.echo('from when until when? YYYY-mm-dd:YYYY-mm-dd')
@@ -43,6 +43,11 @@ def main(d,files,query):
         elif userinp=='all':
             output=db.query_db(f'SELECT * FROM smartthings')
             click.echo(output)
+        elif userinp =="name":
+            name_inp = input("Which name do you want to filter the dataset for?")
+            query = f"SELECT * FROM smartthings WHERE name = '{name_input}'"
+            output = db.query_db(query)
+    click.echo(output)
         return
     
     all_files=[] #empty list to gather files from users input
