@@ -20,29 +20,37 @@ def main(d,files,query):
     db = HomeMessagesDB(d)
     db.create_db()
     
+    # query cluster
     if query:
-        click.echo('Would you like output specified on date, object or size of the database?')
+        click.echo('Would you like output specified on date, name or size of the database?')
         userinp= input()
+        # check if user input is date 
+        
+        
         if userinp.lower() =='date':
             click.echo('from when until when? YYYY-mm-dd:YYYY-mm-dd')
             timeinp=input()
-            if ':' in timeinp:
-                dates=timeinp.split(':')
-                datepars1=list(map(int, dates[0].split('-')))
-                date1= int(datetime(*datepars1).timestamp())
+            
+            #check if user put in two dates
+            if ':' in timeinp:  
+                dates=timeinp.split(':') # split dates based on :
+                datepars1=list(map(int, dates[0].split('-'))) # convert string input into numeric list
+                date1= int(datetime(*datepars1).timestamp()) # convert numeric list into date
                 
                 datepars2=list(map(int, dates[1].split('-')))
                 date2=int(datetime(*datepars2).timestamp())
-            else:
+            else: #if user only put in 1 date
                 datepars1=list(map(int, timeinp.split('-')))
                 date1= int(datetime(*datepars1).timestamp())
                 date2=date1
 
-            output=db.query_db(f'SELECT * FROM smartthings WHERE epoch >= {1665346388} AND epoch <={1665346402}')
+            output=db.query_db(f'SELECT * FROM smartthings WHERE epoch => {date1} AND epoch <= {date2}')
             click.echo(output)
-        elif userinp=='all':
-            output=db.query_db(f'SELECT * FROM smartthings')
-            click.echo(output)
+        elif userinp =="name":
+            name_inp = input("Which name do you want to filter the dataset for?")
+            query = f"SELECT * FROM smartthings WHERE name = '{name_input}'"
+            output = db.query_db(query)
+    click.echo(output)
         return
     
     all_files=[] #empty list to gather files from users input
