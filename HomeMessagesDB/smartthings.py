@@ -3,7 +3,6 @@
 #or in general smartthings.py -d dburl *tsv
 #the code will not pick anything up as the files presented in the assig are tsv.gz
 #should we build in a save net for that?
-#from home_messages_db.py import home_messages_db.py
 import click
 import glob
 import os
@@ -41,9 +40,13 @@ def present_files(d,files):
                 click.echo(f'No file "{pattern}" found!')
                 
     #add to database
-    #db = home_messages_db(d)
-    for f in all_files:
-        #insert_table_smartthings(f)
-        ## this is just to check if it works, echo will be deleted later 
-        click.echo(f'{d},{f}')
-        
+    from home_messages_db import HomeMessagesDB
+
+    db = HomeMessagesDB(d)
+    db.create_db()
+    with click.progressbar(all_files, label='inserting files', length=files) as bar:
+        for f in bar:
+            db.insert_table_smartthings(f)
+            
+
+    
