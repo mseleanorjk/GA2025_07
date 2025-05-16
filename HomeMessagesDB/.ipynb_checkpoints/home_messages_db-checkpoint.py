@@ -272,8 +272,6 @@ class HomeMessagesDB:
         for column in P1g:
             P1g.rename(columns = {column : column.replace(" ", "_")}, inplace = True)
         P1g.columns = ["Total_gas_used", "epoch"]
-        cols = P1g.columns.tolist()
-        cols = cols[-1:] + cols[:-1]
         P1g.dropna(inplace=True)
 
         # Create table if it was dropped
@@ -285,10 +283,12 @@ class HomeMessagesDB:
             agg_query = sa.text("""SELECT epoch, 
                         avg(Total_gas_used) as Total_gas_used
                         FROM (
-                            SELECT *
+                            SELECT epoch,
+                                Total_gas_used
                             FROM temp
                             UNION ALL
-                            SELECT *
+                            SELECT epoch,
+                                Total_gas_used
                             FROM P1g
                         )
                         GROUP BY epoch""")
