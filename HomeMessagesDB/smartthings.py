@@ -43,14 +43,16 @@ def main(d,files,query):
                 datepars1=list(map(int, timeinp.split('-')))
                 date1= int(datetime(*datepars1).timestamp())
                 date2=date1
-
             output=db.query_db(f'SELECT * FROM smartthings WHERE epoch => {date1} AND epoch <= {date2}')
-            click.echo(output)
+            
         elif userinp =="name":
             name_inp = input("Which name do you want to filter the dataset for?")
             query = f"SELECT * FROM smartthings WHERE name = '{name_input}'"
             output = db.query_db(query)
-    click.echo(output)
+            
+        elif userinp =='size':
+            query = f'SELECT COUNT(*) FROM smartthings'
+        click.echo(output)
         return
     
     all_files=[] #empty list to gather files from users input
