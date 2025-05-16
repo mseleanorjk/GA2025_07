@@ -235,7 +235,7 @@ class HomeMessagesDB:
                 logging.info(f"{file_name} was already appended to table 'P1e'")
             else:
                 try:
-                    P1e_new.to_sql("P1e", self.db.connect(), if_exists="append", index=False)
+                    P1e_new.to_sql("P1e", self.db.connect(), if_exists="replace", index=False)
                     add_file_query = sa.text(f"INSERT INTO tracking (file_name) VALUES ('{file_name}')")
                     connection.execute(add_file_query)
                 except Exception as e: 
