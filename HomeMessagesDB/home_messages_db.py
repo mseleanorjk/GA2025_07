@@ -203,7 +203,7 @@ class HomeMessagesDB:
         P1e["epoch"] = pd.to_datetime(P1e["time"], utc=True).astype("int64") // 10**9 
         P1e.drop("time", axis=1,inplace = True)
         P1e.columns = ['Electricity_imported_T1','Electricity_imported_T2','Electricity_exported_T1','Electricity_exported_T2','epoch']
-        cols = df.columns.tolist()
+        cols = P1e.columns.tolist()
         cols = cols[-1:] + cols[:-1]
         
         P1e.dropna(inplace=True, how= 'all', subset=[
