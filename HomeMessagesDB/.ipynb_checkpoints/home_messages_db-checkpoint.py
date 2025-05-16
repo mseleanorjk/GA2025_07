@@ -265,10 +265,29 @@ class HomeMessagesDB:
         P1g.drop("time", axis=1,inplace = True)
         for column in P1g:
             P1g.rename(columns = {column : column.replace(" ", "_")}, inplace = True)
+        P1g.columns = ["Total_gas_used", "epoch"]
+        cols = P1g.columns.tolist()
+        cols = cols[-1:] + cols[:-1]
         P1g.dropna(inplace=True)
 
         # Create table if it was dropped
         self.create_p1g_table()
+        
+        # Temporary table for aggregation purposes
+        with self.db.begin() as connection:
+            P1g.to_sql("temp", connection, if_exists="replace", index=False)
+            agg_query = sa.text("""SELECT epoch, 
+                        avg(Total_gas_used) as Total_gas_used
+                        FROM (
+                            SELECT *
+                            FROM temp
+                            UNION 
+                            SELECT *
+                            FROM P1g
+                        )
+                        GROUP BY epoch""")
+            P1g_new = pd.read_sql(agg_query, con = connection)
+        self.drop_table("temp")
 
         # Inserting the table into the database
         check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
@@ -278,7 +297,7 @@ class HomeMessagesDB:
                 logging.info(f"{file_name} was already appended to table 'P1g'")
             else:
                 try:
-                    P1g.to_sql("P1g", self.db.connect(), if_exists="append", index=False)
+                    P1g_new.to_sql("P1g", self.db.connect(), if_exists="append", index=False)
                     add_file_query = sa.text(f"INSERT INTO tracking (file_name) VALUES ('{file_name}')")
                     connection.execute(add_file_query)
                 except Exception as e:
