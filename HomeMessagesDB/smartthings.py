@@ -18,22 +18,60 @@ import os
 def main(d,files,query,rm):
     """Very clear explanation of the function which will be written in the future"""
     
+    # initialize db
     from home_messages_db import HomeMessagesDB
     db = HomeMessagesDB(d)
     db.create_db()
-    # remove option
+    
+    # file insertion
+    ## gathering files
+    all_files=[] # ini empty list to gather files from users input
+    # gather user specified files
+    for pattern in files:
+        #check if a pattern in user input
+        if '*' in pattern or '?' in pattern:
+            #if so use it to find all files
+            matched_files=glob.glob(pattern)
+            #and add them to all_files list 
+            all_files.extend(matched_files)
+            
+            # if glob does not find anything it gives back an empty list
+            # therefore check if list matched files is empty and if so echo a warning 
+            ## could be made better with Try and raiseError maybe
+            ##although its cli so ???
+            if len(matched_files)==0:
+                click.echo('No files found using pattern!')
+                return None
+        
+        # if user wrote down a filepath        
+        else:    
+            #check if path exists
+            if os.path.exists(pattern):
+                #add path to all_files
+                all_files.append(pattern)
+            else:
+                click.echo(f'No file "{pattern}" found!')
+                return None
+    
+    ## insert files into the database 
+    with click.progressbar(all_files, label='inserting files') as bar:
+        for files in bar:
+            db.insert_table_smartthings(files)
+
+    # Options 
+    ## remove content
     if rm:
         click.echo('Are you sure you want to remove all data from the table? Yes/No')
         userinp= input()
-        if userinp.lower == 'yes':    
-            db= db.erase_table('smartthings')
-            click.echo(output)
+        if userinp.lower() == 'yes':    
+            db.erase_table_content('smartthings')
+            click.echo('table content removed')
             return
-        elif userinp.lower =='no':
+        elif userinp.lower() =='no':
             return
         return  
     
-    # query cluster
+    ## query cluster
     if query:
         click.echo('Would you like output specified on date, name or size of the database?')
         userinp= input()
@@ -66,43 +104,7 @@ def main(d,files,query,rm):
         elif userinp =='size':
             output = db.query_db(f'SELECT COUNT(*) as number_of_rows FROM smartthings')
         click.echo(output)
-        return
-    
-    all_files=[] #empty list to gather files from users input
-    #loop over everything in files, user specified
-    for pattern in files:
-        #check if there is a pattern in what the user specified
-        if '*' in pattern or '?' in pattern:
-            #if so use it to find all files
-            matched_files=glob.glob(pattern)
-            #and add them to all_files list 
-            all_files.extend(matched_files)
-            
-            #if glob does not find anything it gives back an empty list
-            #therefore check if list matched files is empty and if so echo a warning 
-            ## could be made better with Try and raiseError maybe
-            ##although its cli so ???
-            if len(matched_files)==0:
-                click.echo('No files found using pattern!')
-                return None
-        
-        #in the case the user wrote down filepaths without wildcards        
-        else:    
-            #check if path exists
-            if os.path.exists(pattern):
-                #add path to all_files
-                all_files.append(pattern)
-            else:
-                click.echo(f'No file "{pattern}" found!')
-                return None
-
-    with click.progressbar(all_files, label='inserting files') as bar:
-        for files in bar:
-            db.insert_table_smartthings(files)
-
-## this does not work as -d gets the dburl, so add a second option to dburL?
-## No def make a new command for this  
-    
+        return    
 
 if __name__ == '__main__':
     main()
