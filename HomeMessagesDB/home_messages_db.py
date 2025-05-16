@@ -203,8 +203,6 @@ class HomeMessagesDB:
         P1e["epoch"] = pd.to_datetime(P1e["time"], utc=True).astype("int64") // 10**9 
         P1e.drop("time", axis=1,inplace = True)
         P1e.columns = ['Electricity_imported_T1','Electricity_imported_T2','Electricity_exported_T1','Electricity_exported_T2','epoch']
-        cols = P1e.columns.tolist()
-        cols = cols[-1:] + cols[:-1]
         
         P1e.dropna(inplace=True, how= 'all', subset=[
                         'Electricity_imported_T1',
@@ -219,18 +217,26 @@ class HomeMessagesDB:
         with self.db.begin() as connection:
             P1e.to_sql("temp", connection, if_exists="replace", index=False)
             agg_query = sa.text("""SELECT epoch, 
-                        avg(Electricity_imported_T1) as Electricity_imported_T1,
-                        avg(Electricity_imported_T2) as Electricity_imported_T2,
-                        avg(Electricity_exported_T1) as Electricity_exported_T1,
-                        avg(Electricity_exported_T2) as Electricity_exported_T2
-                        FROM (
-                            SELECT *
-                            FROM temp
-                            UNION 
-                            SELECT *
-                            FROM P1e
-                        )
-                        GROUP BY epoch""")
+                    avg(Electricity_imported_T1) as Electricity_imported_T1,
+                    avg(Electricity_imported_T2) as Electricity_imported_T2,
+                    avg(Electricity_exported_T1) as Electricity_exported_T1,
+                    avg(Electricity_exported_T2) as Electricity_exported_T2
+                    FROM (
+                        SELECT epoch, 
+                               Electricity_imported_T1, 
+                               Electricity_imported_T2, 
+                               Electricity_exported_T1, 
+                               Electricity_exported_T2
+                        FROM temp
+                        UNION ALL
+                        SELECT epoch, 
+                               Electricity_imported_T1, 
+                               Electricity_imported_T2, 
+                               Electricity_exported_T1, 
+                               Electricity_exported_T2
+                        FROM P1e
+                    )
+                    GROUP BY epoch""")
             P1e_new = pd.read_sql(agg_query, con = connection)
         self.drop_table("temp")
 
@@ -281,7 +287,7 @@ class HomeMessagesDB:
                         FROM (
                             SELECT *
                             FROM temp
-                            UNION 
+                            UNION ALL
                             SELECT *
                             FROM P1g
                         )
