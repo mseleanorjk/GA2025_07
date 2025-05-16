@@ -108,15 +108,3 @@ def main(d,files,query,rm):
 
 if __name__ == '__main__':
     main()
-    
-
-
-int(datetime(*[2021,7,26]).timestamp())
-
-
-timeinp=input()
-print(timeinp)
-datepars1=list(map(int, timeinp.split('-')))
-print(datepars1)
-date1= int(datetime(*datepars1).timestamp())
-print(date1)
