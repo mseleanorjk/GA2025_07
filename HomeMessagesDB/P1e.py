@@ -44,14 +44,14 @@ def query_name(mydb, tableName):
 
 def query_electricity(mydb,tablename):
     elec_inp = input("Do you want electricity: Import/Export/Export & Import")
-    if(elec_inp.lower() == "import"):
+    if(elec_inp.lower() == " import"):
         query = f"SELECT AVG((Electricity_imported_T1 +Electricity_imported_T2)/2) as avg_import FROM '{tablename}'"
         output = mydb.query_db(query)
-    elif(elec_inp.lower() == "export"):
+    elif(elec_inp.lower() == " export"):
         query = f"SELECT AVG((Electricity_exported_T1 +Electricity_exported_T2)/2) as avg_export FROM '{tablename}'"
         output = mydb.query_db(query)
-    elif(elec_inp.lower() == "export & import"):
-        query = f"SELECT AVG((Electricity_imported_T1 +Electricity_imported_T2)/2) as avg_import, AVG((Electricity_exported_T1 +Electricity_exported_T2)/2) as avg_export, FROM '{tablename}'"
+    elif(elec_inp.lower() == " export & import"):
+        query = f"SELECT AVG((Electricity_imported_T1 +Electricity_imported_T2)/2) as avg_import, AVG((Electricity_exported_T1 +Electricity_exported_T2)/2) as avg_export FROM '{tablename}'"
         output = mydb.query_db(query)
     else:
         click.echo("Invalid input, please try again specifying import/export/both")
@@ -156,9 +156,7 @@ def insert_file(dburl,filename, eraseTable, query):
         inp = input()
         if inp.lower() == "size":
             query_size(mydb, "P1e")
-        if inp.lower() == "name":
-            query_name(mydb, "P1e")
-        if inp.lower() == "electricity":
+        elif inp.lower() == "electricity":
             query_electricity(mydb, "P1e")
         else:
             click.echo("Invalid input, please try again specifying what query you would like to run")
