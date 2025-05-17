@@ -25,13 +25,13 @@ def query_average_gas(db):
 
 @click.command()
 @click.option('-d', '--dburl', required = True, help = 'DBURL into which to insert the database (must be a SQLAlchemy database URL)')
-@click.option('-e','eraseTable',is_flag = True, help = "removes all data from the P1g table")
+@click.option('-e','--eraseTable',is_flag = True, help = "removes all data from the P1g table")
 @click.option('-q', '--query', default=None, is_flag=True, help='Fetch all entries in the P1g table occuring between two dates (or on one certain date)')
 @click.option('-qa', '--query_average', default =None, is_flag = True, help = 'Fetch average gas use between two dates (or on one specific date)')
-@click.option('-s' '--size', default = None, is_flag = True, help = 'Output the current size (number of entries) of the P1g table in the database')
-@click.argument("filename", required = False, metavar = "P1g-2022-12-01-2023-01-10.csv.gz [...]")
+@click.option('-s', '--size', default = None, is_flag = True, help = 'Output the current size (number of entries) of the P1g table in the database')
+@click.argument("filename", required = False, default = None, metavar = "P1g-2022-12-01-2023-01-10.csv.gz [...]")
 
-def p1g(dburl, filename, query):
+def p1g(dburl, erasetable, query, query_average, size, filename):
     """
     Usage: 
         This script inserts gas consumption data from the P1g files into a SQLAlchemy database.
