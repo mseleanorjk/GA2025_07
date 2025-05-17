@@ -1,5 +1,9 @@
 """
 Tool for handling OpenWeatherMap API requests and data files
+
+Choices of the user:
+- the parameters wanted for in the dataframe 
+- whether the dataframe will be overwritten or saved separately
 """
 
 # Installation of libraries:
@@ -15,30 +19,36 @@ from retry_requests import retry
 import os
 
 @click.command() #function below should be treated as cli command
-@click.option('-w', "w", nargs =2, help='Enter begin and end date') # option -d for user
+#@click.option('-w', "w", nargs =2, help='Enter begin and end date') # option -w for user, makes sure that we can enter two inputs
 @click.option('--parameters', default=None, is_flag=True, help = "Trigger to get the option of parameters included in dataframe")
 @click.option('--newdf', default = None, is_flag = True, help = "Trigger to get an option override dataframe or make a new one")
+@click.argument("w", nargs =-1, required = True) # makes sure that 1 argument is also possible
 
 def get_df(w, parameters, newdf):
-    """Input the start and end data of the weather data you want to get. Output is a dataframe of dates, temperatures. """
-    if len(w) == 2:
+    """Input the start and end data of the weather data you want to get (w) + parameters + overwrite y/n. 
+    Output is a dataframe of dates, and selected variables. """
+    if len(w) == 2: 
         click.echo(f"Returning data frame from {w[0]} to {w[1]}")
-    elif len(w) == 1: 
-        # Check how to do this?????
-        click.echo(f"You only entered one date. Returning data frame from {w[0]}")
-    else:
-        click.echo("Please enter a begin and end date")
-        raise click.Abort()
+        # defining the dates
+        start_date = w[0]
+        end_date = w[1]
     
-    start_date = w[0]
-    end_date = w[1]
+    elif len(w) == 1: 
+        click.echo(f"You only entered one date. Returning data frame from {w[0]}")
+        # defining the dates
+        start_date = w[0]
+        end_date = w[0]
+    
+    else: # wrong entry
+        click.echo("Please enter one begin date and one end date")
+        raise click.Abort()
     
     # Setup the Open-Meteo API client with cache and retry on error
     cache_session = requests_cache.CachedSession('.cache', expire_after = -1)
     retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
     openmeteo = openmeteo_requests.Client(session = retry_session)
     
-    # Mapping the userfriendly names to variable names
+    # Mapping the user-friendly names to variable names
     variable_mapping = {
 		"temp_real": "temperature_2m",
 		"temp_feel": "apparent_temperature",
@@ -51,9 +61,10 @@ def get_df(w, parameters, newdf):
 		"wind_direction": "wind_direction_10m"
 	}
     
+    # getting user input for the parameters to include in dataframe
     if parameters:
-        text = input( # userfriendly names of the variables
-            "Please enter the variable names you want in the dataframe, separated by commas. \n. The options are:\n "
+        text = input( # user-friendly names of the variables
+            "Please enter the variable names you want in the dataframe, separated by commas.\n The options are:\n "
             "- temp_real: Air temperature at 2 meters above ground\n" 
             "- temp_feel: Perceived feels-like temperature \n"
             "- humidity: Relative humidity at 2 meters above ground\n"
@@ -69,14 +80,15 @@ def get_df(w, parameters, newdf):
         # Converting user-friendly names back into variable names
         try:
             variable_names = [variable_mapping[v] for v in variable_list]
-            hourly_variables = ",".join(variable_names) # make string
+            hourly_variables = ",".join(variable_names) # make string of all variables together
         except KeyError as wrong_name: 
             print(f"Invalid variable name: {wrong_name}. Please try again.")
             raise SystemExit()
     
-        
+    # no input of parameters --> only dates + temperatures in dataframe
     else:
         hourly_variables = "temperature_2m"
+        variable_names = ["temperature_2m"]
     
     # Make sure all required weather variables are listed here
     # The order of variables in hourly or daily is important to assign them correctly below 
@@ -117,21 +129,28 @@ def get_df(w, parameters, newdf):
     
     # Saving to data map
     path = os.path.join(".", "data", "openweathermap")
-    os.makedirs(path, exist_ok=True) # if it does not exist yet    
+    os.makedirs(path, exist_ok=True) # if it does not exist yet --> make the map   
     
+    # getting user input whether to override dataframe 
     if newdf:
-        override = input("Do you want to override the last dataframe (recommended)? Please type Y/ N")
-        if override == "Y":
+        override = input("Do you want to override the last dataframe (recommended)? Please type Y/ N.\n")
+        if (override == "Y" or override == "y"):
             output_path = os.path.join(path, "weather.csv") # add filename
-            click.echo(f"The file name is weather.csv")
+            click.echo(f"The dataframe is saved as weather.csv")
             hourly_dataframe.to_csv(output_path, index=False)
-        elif override == "N":
+        elif (override == "N" or override == "n"):
             output_path = os.path.join(path, f"weather_{start_date}_to_{end_date}.csv") # add filename
-            click.echo(f"The new file name is weather_{start_date}_to_{end_date}.csv")
+            click.echo(f"The new file is saved as weather_{start_date}_to_{end_date}.csv")
             hourly_dataframe.to_csv(output_path, index=False)
-        else:
-            click.echo("Please enter Y or N\n")
-        
+        elif KeyError: 
+            print("Invalid answer. Please try again and enter either Y or N.")
+            raise SystemExit()
+            #click.echo("IPlease enter Y or N\n")
+    # no input of newdf --> saved as weather.csv
+    else: 
+        output_path = os.path.join(path, "weather.csv") # add filename
+        click.echo(f"The dataframe is saved as weather.csv")
+        hourly_dataframe.to_csv(output_path, index=False)
 
 if __name__=='__main__':
     get_df()
