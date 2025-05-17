@@ -3,6 +3,7 @@ import click
 import glob
 import logging
 from datetime import datetime
+import pandas as pd
 
 def validate_filename(filename, toolname):
     """
@@ -52,10 +53,10 @@ def file_insertion(files, mydb, toolname):
             mydb.insert_table_P1e(file)
     elif toolname == "P1g":
         for file in files:
-            mydb.insert_table_P1e(file)
+            mydb.insert_table_P1g(file)
     elif toolname == "smartthings":
         for file in files:
-            mydb.insert_table_P1e(file)
+            mydb.insert_table_smartthings(file)
     else:
         click.echo("Please provide a valid toolname")
 
@@ -68,7 +69,7 @@ def erase(mydb,tableName):
         mydb.erase_table_content(tableName)
         click.echo(f"Successfully erased {tableName} content")
     except Exception as e:
-            click.echo(f"Error: {e}")
+            click.echo(f"Could not erase this table from the database: {e}")
 
 
 def query_size(mydb, tableName):
@@ -164,5 +165,10 @@ def return_entries_between_dates(db, toolname):
     click.echo("Would you like to save the output to a file? Y/N")
     save_file_option = parse_user_answer(input())
 
-    db.query_db(f'SELECT * FROM {toolname} WHERE epoch => {start_date} AND epoch <= {end_date}', save_file_option)
+    result = db.query_db(f'SELECT * FROM {toolname} WHERE epoch >= {start_date} AND epoch <= {end_date}', save_file_option)
+    if result.shape[0] == 0:
+        click.echo("No results found for those dates!")
+    else:
+        click.echo(result)
+
 

@@ -22,11 +22,10 @@ def query_average_gas(db):
 
 
 
-
-@click.command()
-@click.option('-d', '--dburl', required = True, help = 'DBURL into which to insert the database (must be a SQLAlchemy database URL)')
-@click.option('-e','--eraseTable',is_flag = True, help = "removes all data from the P1g table")
-@click.option('-q', '--query', default=None, is_flag=True, help='Fetch all entries in the P1g table occuring between two dates (or on one certain date)')
+@click.command(no_args_is_help=True)
+@click.option('-d', '--dburl', required = False, help = 'DBURL into which to insert the database (must be a SQLAlchemy database URL)')
+@click.option('-e','--erasetable',is_flag = True, help = "removes all data from the P1g table")
+@click.option('-q', '--query', default=None, is_flag=True, help='Run a query which fetches all entries in the P1g table occuring between two dates (or on one certain date)')
 @click.option('-qa', '--query_average', default =None, is_flag = True, help = 'Fetch average gas use between two dates (or on one specific date)')
 @click.option('-s', '--size', default = None, is_flag = True, help = 'Output the current size (number of entries) of the P1g table in the database')
 @click.argument("filename", required = False, default = None, metavar = "P1g-2022-12-01-2023-01-10.csv.gz [...]")
@@ -39,21 +38,15 @@ def p1g(dburl, erasetable, query, query_average, size, filename):
         -d DBURL insert into the project database (DBURL is a SQLAlchemy database URL)
         -e Remove all data from the P1g table
         -q Run a query (fetch all entries between 2 dates, fetch average electricity usage between 2 dates) instead  of inserting files
-    """
-    try: 
-        mydb = db.HomeMessagesDB(dburl)
-    except Exception as e:
-        click.echo(f"Error: {e}")
-    try:
-        mydb.create_db()
-    except Exception as e:
-        click.echo(f"Error: {e}")
+    """ 
+    mydb = db.HomeMessagesDB(dburl)
+    mydb.create_db()
     
-    if eraseTable:
+    if erasetable:
         hf.erase(mydb, "P1g")
     
     elif query:
-        hf.return_entries_between_dates("P1g")
+        hf.return_entries_between_dates(mydb, "P1g")
     
     elif query_average:
         query_average_gas(mydb)
@@ -63,13 +56,9 @@ def p1g(dburl, erasetable, query, query_average, size, filename):
     
     elif filename:
         files = hf.check_filepaths(filename, "P1g")
-        try:
-            hf.file_insertion(files, mydb, "P1g")
-        except Exception as e:
-            click.echo(f"Error: {e}")
+        hf.file_insertion(files, mydb, "P1g")
 
-    else:
-        raise Exception("Invalid input, please try again!")
+
     
 
     
