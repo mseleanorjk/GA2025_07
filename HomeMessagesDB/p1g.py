@@ -52,67 +52,74 @@ def check_filepaths(user_input_files, toolname):
             valid_filepaths.append(file)
         else:
             raise Exception("(One of) the file(s) specified is not a valid file/is corrupted. Please try again.")
-    print(valid_filepaths)
+    return valid_filepaths
 
+
+def date_into_timestamp(date):
+    try:
+        datepars = list(map(int, date.split('-'))) # Convert string input into numeric list
+        print("datepars: ", datepars)
+    except: 
+        raise Exception("You provided the date(s) in the wrong format. Please try again using the format: YYYY-mm-dd:YYYY-mm-dd")
+    try:
+        return(int(datetime(*datepars).timestamp()))
+    except:
+        raise Exception("The date you provided is not a valid timestamp. Please try again")
+
+
+def return_dates(timeinp):
+    if ':' in timeinp: # if the separator is included in the query
+        dates = timeinp.split(':') # split the list
+        start_date = date_into_timestamp(dates[0]) 
+        end_date = date_into_timestamp(dates[1]) # and define different end-date
+    else: # if there is no separator in the query
+        start_date = date_into_timestamp(timeinp)
+        end_date = start_date
+    return start_date, end_date
+
+
+
+def parse_user_answer(input):
+    accepted_inputs = {"y": True, 
+                    "yes": True, 
+                    "n": False, 
+                    "no": False}
+    input = accepted_inputs[input]
+    return(input)
     
-def return_dates():
+
+
+def return_dates(db):
     """
-    Queries data from specific date or between specific dates, based on user input. Also handles different formatting for the dates.
+    Queries data from specific date or between specific dates, based on user input.
+    Allows user to save it to a file if desired.
 
     Returns: 
         Data for specified dates.
     """
     
-    click.echo("From when until when? In format: YYYY-mm-dd:YYYY-mm-dd")
+    click.echo("From when until when? In format: YYYY-mm-dd:YYYY-mm-dd. You may also specify a single date by ommitting everything after the colon")
     timeinp = input()
+    start_date, end_date = return_dates(timeinp)
+
+    click.echo("Would you like to save the output to a file? Y/N")
+    save_file_option = parse_user_answer(input())
+
+    db.query_db(f'SELECT * FROM smartthings WHERE epoch => {start_date} AND epoch <= {end_date}', save_file_option)
 
 
-    dates = timeinp.split(':')
-    try:
-        datepars1 = list(map(int, dates[0].split('-'))) # Convert string input into numeric list
-        date1 = int(datetime(*datepars1).timestamp())
-    except ValueError:
-        raise Exception("You provided the date(s) in the wrong format. Please try again using the format: YYYY-mm-dd:YYYY-mm-dd")
-    if len(dates) > 1:
-        datepars2 = list(map(int, dates[1].split('-')))
-        date2 = int(datetime(*datepars2).timestamp())
-    else:
-        date2 = date1
-    
-        
-
-
-        
 
 
     
+def query_average_gas(db, tablename):
+    click.echo("From when to when? In format: YYYY-mm-dd. YYYY-mm-dd:YYYY-mm-dd. You may also specify a single date by ommitting everything after the colon")
+    timeinp = return_dates(timeinp)
 
 
-'''
-if userinp.lower() =='date':
-            click.echo('from when until when? YYYY-mm-dd:YYYY-mm-dd')
-            timeinp=input()
-            
-            #check if user put in two dates
-            if ':' in timeinp:  
-                dates=timeinp.split(':') # split dates based on :
-                datepars1=list(map(int, dates[0].split('-'))) # convert string input into numeric list
-                date1= int(datetime(*datepars1).timestamp()) # convert numeric list into date
-                
-                datepars2=list(map(int, dates[1].split('-')))
-                date2=int(datetime(*datepars2).timestamp())
-            else: #if user only put in 1 date
-                datepars1=list(map(int, timeinp.split('-')))
-                date1= int(datetime(*datepars1).timestamp())
-                date2=date1
-            output=db.query_db(f'SELECT * FROM smartthings WHERE epoch => {date1} AND epoch <= {date2}')
-            
-
-'''
 
 
 @click.command()
-@click.option('-d', '--dburl',  help = 'DBURL into which to insert the database (must be a SQLAlchemy database URL)')
+@click.option('-d', '--dburl', required = True, help = 'DBURL into which to insert the database (must be a SQLAlchemy database URL)')
 @click.option('-q', '--query', default=None, is_flag=True, help='Run a query instead of inserting files')
 
 @click.argument("filename", required = False)
