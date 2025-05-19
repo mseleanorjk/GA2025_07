@@ -1,9 +1,12 @@
+from types import NoneType
+
 import sqlalchemy as sa
 import pandas as pd
 import shutil
 from datetime import datetime
 import gzip
 import logging
+import click
 
 class HomeMessagesDB:
     """
@@ -244,15 +247,16 @@ class HomeMessagesDB:
         # Inserting the table into the database
         check_query = sa.text(f"SELECT file_name FROM tracking WHERE file_name='{file_name}'")
         with self.db.begin() as connection:
-            result = connection.execute(check_query).fetchone()
-            if result:
+           result = connection.execute(check_query).fetchone()
+           if type(result) != NoneType:
+                click.echo(f"{file_name} was already appended to table 'P1e'")
                 logging.info(f"{file_name} was already appended to table 'P1e'")
-            else:
+           else:
                 try:
                     P1e_new.to_sql("P1e", self.db.connect(), if_exists="replace", index=False)
                     add_file_query = sa.text(f"INSERT INTO tracking (file_name) VALUES ('{file_name}')")
                     connection.execute(add_file_query)
-                except Exception as e: 
+                except Exception as e:
                     logging.error(f"Could not insert data {file_name} in the P1e table in the database {self.url}: {e}")
                     raise e
         
@@ -283,15 +287,8 @@ class HomeMessagesDB:
             P1g.to_sql("temp", connection, if_exists="replace", index=False)
             agg_query = sa.text("""SELECT epoch, 
                         avg(Total_gas_used) as Total_gas_used
-                        FROM (
-                            SELECT epoch,
-                                Total_gas_used
-                            FROM temp
-                            UNION ALL
-                            SELECT epoch,
-                                Total_gas_used
-                            FROM P1g
-                        )
+                        FROM temp
+                        WHERE epoch NOT IN (SELECT epoch FROM P1g)
                         GROUP BY epoch""")
             P1g_new = pd.read_sql(agg_query, con = connection)
         self.drop_table("temp")
@@ -364,7 +361,7 @@ class HomeMessagesDB:
                 if tables:
                     drop_query = sa.text(f"DROP TABLE {table_name}")
                     connection.execute(drop_query)
-                    print("Table dropped successfully")
+                    logging.info("Table dropped successfully")
                     delete_query = sa.text(f"DELETE FROM tracking WHERE file_name LIKE '%{table_name}%'")
                     connection.execute(delete_query)
                 else:
