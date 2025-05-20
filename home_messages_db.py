@@ -58,8 +58,8 @@ def date_into_timestamp(date):
     """
     try:
         datepars = list(map(int, date.split('-')))  # Convert string input into numeric list
-        if len(datepars) < 3:
-            datepars.append(0,0)
+        if len(datepars) <= 3:
+            datepars.extend((0,0))
     except:
         raise ValueError("You provided the date(s) in the wrong format. Please try again using the format: YYYY-MM-DD-hh-mm:YYYY-MM-DD-hh-mm")
     try:
@@ -72,7 +72,7 @@ def return_dates(timeinp):
     """
     Parses dates into timestaps. Can handle two datetimes, two dates, or one date.
     If only one date (but no time) is specified, start_date will be the specified date at time 00:00 and end_date will be the specified date at time 23:59
-    If two dates (but no time) are specified, start_date will be the specified start date at time 00:00 and end_date will be the specified end date also at time 00:00
+    If two dates (but no time) are specified, start_date will be the specified start date at time 00:00 and end_date will be the specified end date also at 00:00
     
     Parameters:
         timeinp: str
@@ -86,9 +86,10 @@ def return_dates(timeinp):
         dates = timeinp.split(':')  # split two dates into list
         start_date = date_into_timestamp(dates[0])
         end_date = date_into_timestamp(dates[1])  # and define different end-date
-    else:  # if there is no separator in the query, then we want all entries within a day
-        start_date = date_into_timestamp(timeinp)
-        end_timeinp = timeinp + "-23" + "-59" # thus, we need to make the end timestamp be at time 23:59 of the specified date
+    else:  # if there is no separator in the query, turn the same date into two timestamps
+        start_timeinp = timeinp + "-0" + "-0" # since it is only one date, we want to grab entries from start timestamp 00:00
+        start_date = date_into_timestamp(start_timeinp)
+        end_timeinp = timeinp + "-23" + "-59" # and, we need to make the end timestamp be at time 23:59 of the specified date
         end_date = date_into_timestamp(end_timeinp)
     return start_date, end_date
 
@@ -720,6 +721,7 @@ class HomeMessagesDB:
         start_date, end_date = return_dates(time_inp)
 
         result = self.query_db(f'SELECT * FROM {toolname} WHERE epoch >= {start_date} AND epoch <= {end_date}', save_file)
+
         if result.shape[0] == 0:
             click.echo("No results found for those dates!")
         elif dataframe == True:
