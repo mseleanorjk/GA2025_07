@@ -111,11 +111,12 @@ def validate_filename(filename, toolname):
             ValueError: "{filename} is not a valid {toolname} filepath!" 
             if the specified filepath does not correspond to a datafile compatible with the tool which called it.
         """
-        if toolname not in str(filename):
-            logging.error(f"Validate_filepath failed for {filename} in {toolname}; invalid filepath")
-            raise ValueError(f"{filename} is not a valid {toolname} filepath! Please enter a valid {toolname} filepath.")
-        else:
-            return str(filename)
+        for user_files in filename:
+            if toolname not in user_files:
+                logging.error(f"Validate_filepath failed for {filename} in {toolname}; invalid filepath")
+                raise ValueError(f"{filename} is not a valid {toolname} filepath! Please enter a valid {toolname} filepath.")
+            else:
+                return str(user_files)
 
 
 def check_filepaths(user_input_files, toolname):

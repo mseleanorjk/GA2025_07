@@ -13,7 +13,7 @@ from datetime import datetime
 @click.option('-q', '--query', default=None, is_flag=True, help='Run a query which fetches all entries in the P1g table occuring between two dates (or on one certain date)')
 @click.option('-qa', '--query_average', default =None, is_flag = True, help = 'Fetch average gas use between two dates (or on one specific date)')
 @click.option('-s', '--size', default = None, is_flag = True, help = 'Output the current size (number of entries) of the P1g table in the database')
-@click.argument("filename", required = False, default = None, metavar = "P1g-2022-12-01-2023-01-10.csv.gz [...]")
+@click.argument("filename", required = False, default = None, nargs=-1, metavar = "P1g-2022-12-01-2023-01-10.csv.gz [...]")
 
 def p1g(dburl, erasetable, query, query_average, size, filename):
     """

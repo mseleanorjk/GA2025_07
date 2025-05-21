@@ -11,7 +11,7 @@ import home_messages_db as db
 @click.option('-qn', '--query_name', default=None, is_flag=True, help='Run a query fetching all entries for a certain device name')
 @click.option('-e','--erasetable', default=None, is_flag=True, help='Removes all data from table')
 @click.option('-s', '--size', default = None, is_flag = True, help = 'Output the current size (number of entries) of smartthings table in the database')
-@click.argument('filename')
+@click.argument('filename', nargs=-1)
 
 def smartthings(dburl ,query ,query_name ,size ,erasetable ,filename):
 
@@ -34,8 +34,13 @@ def smartthings(dburl ,query ,query_name ,size ,erasetable ,filename):
     
     elif filename:
         files = db.check_filepaths(filename, "smartthings")
-        for file in files:
-            mydb.insert_table_smartthings(file)
+        with click.progressbar(files) as bar:
+            for file in bar:
+                try:
+                    mydb.insert_table_smartthings(file)
+                except Exception as e:
+                    click.echo(f"Error- failed to insert file: {e}",err=True, nl=True)
+        click.echo('File insertion completed!')
     
 if __name__ == '__main__':
     smartthings()
