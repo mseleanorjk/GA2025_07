@@ -514,7 +514,6 @@ class HomeMessagesDB:
                 raise e
         return(df)
 
-
     def drop_table(self, table_name):
         """
         Function handling table dropping. 
@@ -541,7 +540,7 @@ class HomeMessagesDB:
     
 
 
-    def erase_table_content(self, table_name):
+    def erase_table_content(self, table_name, ask = True):
         """
         Function handling table deletions. 
         Deletes the data from the table and removes the corresponding file name from the 'tracking' table.
@@ -552,9 +551,10 @@ class HomeMessagesDB:
         - self.db: The engine variable needed to start the connection
         - table_name: The name of the table to delete the data from
         """
-        click.echo("Are you sure you want to erase all contents of this table from the database? Y/N")
-        inp = parse_user_answer(input())
-        if inp == True:
+        if ask:
+            click.echo("Are you sure you want to erase all contents of this table from the database? Y/N")
+            inp = parse_user_answer(input())
+        if (not ask) or inp:
             with self.db.begin() as connection:
                 table_names = sa.text(f"SELECT name FROM sqlite_master WHERE type='table' and tbl_name = '{table_name}'")
                 tables = connection.execute(table_names).fetchone()
@@ -608,7 +608,6 @@ class HomeMessagesDB:
             pandas.dataframe: containing all data from the table corresponding to the parameter passed to the function.
         """
         return(pd.DataFrame(self.query_db(f"SELECT * FROM '{table_name}'")))
-
 
     def query_electricity(self,tablename):
         """
@@ -727,49 +726,32 @@ class HomeMessagesDB:
             return(pd.DataFrame(result))
         else:
             click.echo(result)
+
+    def insert_all(self, file_names):
+        """
+        This method inserts all files that are given as argument in the correct table. Created
+        for the reports.
+
+        Parameters:
+            file_names: list
+                A list of file names or paths
+
+        Returns:
+            None
+        """
+        # Erasing all content   
+        db.erase_table_content("smartthings", ask = False)
+        db.erase_table_content("P1e", ask = False)
+        db.erase_table_content("P1g", ask = False)
+
+        # Adding all tables
+        files = check_filepaths(file_names,"P1e")
+        for file in files:
+            db.insert_table_P1e(file)
+        files = check_filepaths(file_names,"smartthings")
+        for file in files:
+            db.insert_table_smartthings(file)
+        files = check_filepaths(file_names,"P1g")
+        for file in files:
+            db.insert_table_P1g(file)
     
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
