@@ -514,7 +514,6 @@ class HomeMessagesDB:
                 raise e
         return(df)
 
-
     def drop_table(self, table_name):
         """
         Function handling table dropping. 
@@ -609,7 +608,6 @@ class HomeMessagesDB:
             pandas.dataframe: containing all data from the table corresponding to the parameter passed to the function.
         """
         return(pd.DataFrame(self.query_db(f"SELECT * FROM '{table_name}'")))
-
 
     def query_electricity(self,tablename):
         """
@@ -757,48 +755,3 @@ class HomeMessagesDB:
         for file in files:
             db.insert_table_P1g(file)
     
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
