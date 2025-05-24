@@ -3,55 +3,52 @@ import click
 import glob
 import home_messages_db as db
 import logging
-import helperFile as hf
-CONTEXT_SETTINGS = dict(help_option_names=[' ','-h', '--help'])
+from datetime import datetime
 
 
-@click.command(context_settings=CONTEXT_SETTINGS)
-@click.option('-d', 'dburl', metavar='DBURL', help= "Insert or remove into/from the project database (DBURL is a SQLAlchemy database URL)",required=True)
-@click.option('-e','eraseTable',is_flag = True, help = "removes all data from the P1e table")
-@click.option('-q', "query", is_flag = True, help = "Pass query to the P1e table")
-@click.argument("filename", required = False, metavar = "P1e-2022-01-01-2022-05-07.csv.gz[...]")
-def insert_file(dburl,filename, eraseTable, query):
+
+@click.command(no_args_is_help=True)
+@click.option('-d', '--dburl', required = False, help = 'DBURL into which to insert the database (must be a SQLAlchemy database URL)')
+@click.option('-e','--erasetable',is_flag = True, help = "removes all data from the P1e table")
+@click.option('-q', '--query', default=None, is_flag=True, help='Run a query which fetches all entries in the P1e table occuring between two dates (or on one certain date)')
+@click.option('-qa', '--query_average', default =None, is_flag = True, help = 'Fetch average gas use between two dates (or on one specific date)')
+@click.option('-s', '--size', default = None, is_flag = True, help = 'Output the current size (number of entries) of the P1e table in the database')
+@click.argument("filename", required = False, default = None, nargs=-1, metavar = "P1e-2022-12-01-2023-01-10.csv.gz [...]")
+
+def P1e(dburl, erasetable, query, query_average, size, filename):
     """
-    This function can insert a datafile into the P1e table. It also allows for basic querying of the P1e table as well as allowing it to be erased.
-    The order of the execution of the arguments is: Erase Table -> Insert File -> Query the P1e table
+    Usage: 
+        This script inserts gas consumption data from the P1e files into a SQLAlchemy database.
+    Output options: 
+        -d DBURL insert into the project database (DBURL is a SQLAlchemy database URL)
+        -e Remove all data from the P1e table
+        -q Run a query fetching entries between two datetimes or within a date or between two dates
+        -qa Run a query fetching the average gas usage between two dates or on one specific date
+        -s Output the current size (number of entries) of the P1e table in the database
+    """ 
+    mydb = db.HomeMessagesDB(dburl)
+    mydb.create_db()
+    
+    if erasetable:
+        mydb.erase_table_content("P1e")
+    
+    elif query:
+        mydb.return_entries_between_dates("P1e")
+    
+    elif query_average:
+        mydb.query_average_gas()
+    
+    elif size:
+        mydb.query_size("P1e")
+    
+    elif filename:
+        files = db.check_filepaths(filename, "P1e")
+        for file in files:
+            mydb.insert_table_P1e(file)
+        
+    
 
-    Output options: "Insert or remove into/from the project database (DBURL is a SQLAlchemy database URL)"
-    """
-
-
-    try:
-        mydb = db.HomeMessagesDB(dburl)
-    except Exception as e:
-        click.echo(f"Error: {e}")
-    try:
-        mydb.create_db()
-    except Exception as e:
-        click.echo(f"Error: {e}")
-
-    if eraseTable:
-        hf.erase(mydb, "P1e")
-
-    if filename:
-        files = hf.check_filepaths(filename, "P1e")
-        try:
-            hf.file_insertion(files, mydb, "P1e")
-        except Exception as e:
-            click.echo(f"Error: {e}")
-
-    if query:
-        click.echo("What query would you like to run?")
-        inp = input()
-        if inp.lower() == "size":
-            hf.query_size(mydb, "P1e")
-        elif inp.lower() == "electricity":
-            hf.query_electricity(mydb, "P1e")
-        else:
-            click.echo("Invalid input, please try again specifying what query you would like to run")
-
-
-
+    
 
 if __name__ == "__main__":
-    insert_file()
+    P1e()
