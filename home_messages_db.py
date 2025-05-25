@@ -157,9 +157,9 @@ def check_filepaths(user_input_files, toolname):
         return(valid_filepaths)
 
 
-def timestamp_into_gmt2(timestamp):
+def timestamp_into_ams_time(timestamp):
     """
-    Takes UNIX epoch timestamp and converts into datetime in GMT+2 timezone datetime
+    Takes UNIX epoch timestamp and converts into datetime in Europe/Amsterdam time
     
     Parameters:
         timestamp: float
@@ -167,7 +167,7 @@ def timestamp_into_gmt2(timestamp):
     
     Returns:
         datetime.datetime object
-            Datetime in GMT-2 (Noordwijk time)
+            Datetime in Europe/Amsterdam (Noordwijk time)
     
     """
     return(datetime.fromtimestamp(timestamp, ZoneInfo("Europe/Amsterdam")))
