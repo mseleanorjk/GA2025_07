@@ -306,7 +306,7 @@ This methods takes a series of file names and inserts the files in the correct t
 | Eleonora Roncaglia | s2826577 | mseleanorjk | home_messages_db.py,\_\_init\_\_.py,Clustering_report.ipynb |
 | Mariel Canela Ramírez | s4140990 | mcanela01 | home_messages_db.py,Clustering_report.ipynb |
 | Elena Petridou | s2029197 | elena-petridou | P1g.py,Energy_usage_Report.ipynb,home_messages_db.py |
-| Miro Eisenbarth | s | mebgits | P1g.py,Energy_usage_Report.ipynb,home_messages_db.py |
+| Miro Eisenbarth | s4382706 | mebgits | P1g.py,Energy_usage_Report.ipynb,home_messages_db.py |
 | Bashier Gulzar | s | bassias | smartthings.py,Openweather_Report.ipynb |
 | Eva Rovan | s | eva-rovan | openweathermap.py,Openweather_Report.ipynb |
 
