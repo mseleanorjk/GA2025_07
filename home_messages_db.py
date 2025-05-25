@@ -9,7 +9,7 @@ import logging
 import click
 import os
 import glob
-import pytz
+from zoneinfo import ZoneInfo
 
 
 
@@ -111,13 +111,12 @@ def validate_filename(filename, toolname):
             ValueError: "{filename} is not a valid {toolname} filepath!" 
             if the specified filepath does not correspond to a datafile compatible with the tool which called it.
         """
-        for user_files in filename:
-            click.echo(f'user_files: {user_files}')
-            if toolname not in user_files:
-                logging.error(f"Validate_filepath failed for {filename} in {toolname}; invalid filepath")
-                raise ValueError(f"{filename} is not a valid {toolname} filepath! Please enter a valid {toolname} filepath.")
-            else:
-                return str(user_files)
+        if toolname not in str(filename):
+            logging.error(f"Validate_filepath failed for {filename} in {toolname}; invalid filepath")
+            raise ValueError(f"{filename} is not a valid {toolname} filepath! Please enter a valid {toolname} filepath.")
+        else:
+            return str(filename)
+
 
 
 def check_filepaths(user_input_files, toolname):
@@ -160,7 +159,7 @@ def check_filepaths(user_input_files, toolname):
 
 def timestamp_into_gmt2(timestamp):
     """
-    Takes UNIX epoch timestamp and converts into datetime in GMT+2 timezone
+    Takes UNIX epoch timestamp and converts into datetime in GMT+2 timezone datetime
     
     Parameters:
         timestamp: float
@@ -171,7 +170,7 @@ def timestamp_into_gmt2(timestamp):
             Datetime in GMT-2 (Noordwijk time)
     
     """
-    return(datetime.fromtimestamp(timestamp))
+    return(datetime.fromtimestamp(timestamp, ZoneInfo("Europe/Amsterdam")))
 
 
 class HomeMessagesDB:
