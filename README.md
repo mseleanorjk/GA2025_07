@@ -299,7 +299,7 @@ This methods takes a series of file names and inserts the files in the correct t
 
 | FullName | StudentId | GitHubName | Files |
 | :- | :- | :- | :- |
-| Eleonora Roncaglia | s2826577 | mseleanorjk | home_messages_db.py,__ init __.py,Clustering_report.ipynb |
+| Eleonora Roncaglia | s2826577 | mseleanorjk | home_messages_db.py,\_\_init\_\_.py,Clustering_report.ipynb |
 | Mariel Canela Ramírez | s | mcanela01 | home_messages_db.py,Clustering_report.ipynb |
 | Elena Petridou | s | elena-petridou | P1g.py,Energy_usage_Report.ipynb,home_messages_db.py |
 | Miro Eisenbarth | s | mebgits | P1g.py,Energy_usage_Report.ipynb,home_messages_db.py |
