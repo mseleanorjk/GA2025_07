@@ -111,11 +111,13 @@ def validate_filename(filename, toolname):
             ValueError: "{filename} is not a valid {toolname} filepath!" 
             if the specified filepath does not correspond to a datafile compatible with the tool which called it.
         """
-        if toolname not in str(filename):
-            logging.error(f"Validate_filepath failed for {filename} in {toolname}; invalid filepath")
-            raise ValueError(f"{filename} is not a valid {toolname} filepath! Please enter a valid {toolname} filepath.")
-        else:
-            return str(filename)
+        for user_files in filename:
+            click.echo(f'user_files: {user_files}')
+            if toolname not in user_files:
+                logging.error(f"Validate_filepath failed for {filename} in {toolname}; invalid filepath")
+                raise ValueError(f"{filename} is not a valid {toolname} filepath! Please enter a valid {toolname} filepath.")
+            else:
+                return str(user_files)
 
 
 def check_filepaths(user_input_files, toolname):
@@ -142,12 +144,15 @@ def check_filepaths(user_input_files, toolname):
         tool_dir = os.path.join(script_dir, 'data', toolname)
         filename = validate_filename(user_input_files, toolname)
         full_path = os.path.join(tool_dir, filename)
-        files = glob.glob(full_path)
+        click.echo(f"Globbing path: {full_path}")  # Add this line
+        files = glob.glob(full_path)    
         if len(files) == 0:
             raise Exception(f"No files matching the specified pattern found! Please specify a valid {toolname} filepath.")
         for file in files:
             if os.path.isfile(file):
-                valid_filepaths.append(file)
+                base_name = os.path.basename(file)
+                if base_name.startswith(toolname):
+                    valid_filepaths.append(file)
             else:
                 raise ValueError(f"(One of) the file(s) {file} specified is not a valid file/is corrupted. Please try again.")
         return(valid_filepaths)
@@ -328,6 +333,8 @@ class HomeMessagesDB:
             result = connection.execute(check_query).fetchone()
             if result:
                 logging.info(f"{file_name} was already appended to table 'smartthings'")
+                click.echo(f"{file_name} was already appended to table 'smartthings'", err = True)
+
             else:
                 add_file_query = sa.text(f"INSERT INTO tracking (file_name) VALUES ('{file_name}')")
                 connection.execute(add_file_query)
