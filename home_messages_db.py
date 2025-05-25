@@ -314,7 +314,7 @@ class HomeMessagesDB:
 
         # Preparing the data
         smartthings = smartthings.copy()
-        smartthings["epoch"] = pd.to_datetime(smartthings["epoch"], utc=True).astype("int64") // 10**9  
+        smartthings["epoch"] = pd.to_datetime(smartthings["epoch"], utc=False).astype("int64") // 10**9  
         smartthings.loc[:, 'value_int'] = pd.to_numeric(smartthings['value'], errors='coerce')
         smartthings.loc[:, 'value_str'] = smartthings['value'].where(smartthings['value_int'].isna())
         smartthings.drop(["loc","level", "value"], inplace=True, axis = 1)
@@ -365,7 +365,7 @@ class HomeMessagesDB:
         P1e = pd.read_csv(file_name)
 
         # Preparing the data
-        P1e["epoch"] = pd.to_datetime(P1e["time"], utc=True).astype("int64") // 10**9 
+        P1e["epoch"] = pd.to_datetime(P1e["time"], utc=False).astype("int64") // 10**9 
         P1e.drop("time", axis=1,inplace = True)
         P1e.columns = ['Electricity_imported_T1','Electricity_imported_T2','Electricity_exported_T1','Electricity_exported_T2','epoch']
         
@@ -433,7 +433,7 @@ class HomeMessagesDB:
         P1g = pd.read_csv(file_name)
 
         # Preparing the data
-        P1g["epoch"] = pd.to_datetime(P1g["time"], utc=True).astype("int64") // 10**9 
+        P1g["epoch"] = pd.to_datetime(P1g["time"], utc=False).astype("int64") // 10**9 
         P1g.drop("time", axis=1,inplace = True)
         for column in P1g:
             P1g.rename(columns = {column : column.replace(" ", "_")}, inplace = True)
@@ -729,7 +729,7 @@ class HomeMessagesDB:
         else:
             click.echo(result)
 
-    def insert_all(self, file_names):
+    def insert_all(self):
         """
         This method inserts all files that are given as argument in the correct table. Created
         for the reports.
@@ -741,21 +741,22 @@ class HomeMessagesDB:
         Returns:
             None
         """
-        # Erasing all content   
-        db.erase_table_content("smartthings", ask = False)
-        db.erase_table_content("P1e", ask = False)
-        db.erase_table_content("P1g", ask = False)
 
+        # Erasing all content   
+        self.erase_table_content("smartthings", ask = False)
+        self.erase_table_content("P1e", ask = False)
+        self.erase_table_content("P1g", ask = False)
+                    
         # Adding all tables
-        files = check_filepaths(file_names,"P1e")
+        files = check_filepaths("P1e*","P1e")
         for file in files:
-            db.insert_table_P1e(file)
-        files = check_filepaths(file_names,"smartthings")
+            self.insert_table_P1e(file)
+        files = check_filepaths("smartthings*","smartthings")
         for file in files:
-            db.insert_table_smartthings(file)
-        files = check_filepaths(file_names,"P1g")
+            self.insert_table_smartthings(file)
+        files = check_filepaths("P1g*","P1g")
         for file in files:
-            db.insert_table_P1g(file)
+            self.insert_table_P1g(file)
     
 
 
