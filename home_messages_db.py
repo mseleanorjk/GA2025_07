@@ -94,13 +94,14 @@ def return_dates(timeinp):
     return start_date, end_date
 
 
-def validate_filename(filename, toolname):
+def validate_filename(filenames, toolname):
         """
-        Checks if filename is suitable for this tool. E.g.: p1g files only for p1g tool. 
+        Checks if filenames are suitable for this tool. E.g.: p1g files only for p1g tool.
+        Also checks if files are of a suitable format. E.g.: .csv, .tsv, .csv.gz and .tsv.gz files.
         
         Parameters:
-            filename: str
-                Filename specified by the user as input to the command-line tools 
+            filenames: list
+                Filenames to check
             toolname: str
                 Which tool called this function
 
@@ -108,14 +109,20 @@ def validate_filename(filename, toolname):
             str: valid filename for tool currently in use
         
         Raises:
-            ValueError: "{filename} is not a valid {toolname} filepath!" 
-            if the specified filepath does not correspond to a datafile compatible with the tool which called it.
+            ValueError: "{filename} is not a valid {toolname} filepath!"
+            if the specified filepath is the only one specified by the user and does not correspond to a datafile compatible with the tool which called it.
         """
-        if toolname not in str(filename):
-            logging.error(f"Validate_filepath failed for {filename} in {toolname}; invalid filepath")
-            raise ValueError(f"{filename} is not a valid {toolname} filepath! Please enter a valid {toolname} filepath.")
+        valid_filepaths = []
+        if len(filenames) == 1:
+            if toolname not in str(filenames[0]) or (".csv" not im str(filenames[0]) and ".tsv" not in str(filenames[0])): # if we are trying to insert a file with the wrong name or extension (and this is the only filename specified by the user), raise error
+                raise ValueError(f"{filenames[0]} is not a valid {toolname} filepath!  Please enter a valid {toolname} filepath.") 
+            else:
+                valid_filepaths.append(filenames[0])
         else:
-            return str(filename)
+            for filename in filenames:
+                if toolname not in str(filename):
+                    click.echo(f"{filenames[0]} is not a valid {toolname} filepath!  Please enter a valid {toolname} filepath.") # here, we want to echo the error instead of raising it, as we do not want it to interrupt the script if only one of many files is not suitable
+                    
 
 
 
