@@ -159,7 +159,7 @@ def check_filepaths(user_input_files, toolname):
             else:
                 script_dir = os.path.dirname(os.path.realpath(__file__)) # therefore, the following lines enter a directory called "data", then the directory of the toolname
                 tool_dir = os.path.join(script_dir, 'data', toolname) # so with these lines we are able to fetch data from a directory structure like the one in which the data was uploaded to Brightspace
-                full_path = os.path.join(tool_dir, user_input_files[0])
+                full_path = os.path.join(tool_dir, str(toolname) + "*")
                 files = glob.glob(full_path) # now fetch all files from this directory
                 valid_filepaths = validate_filename(files, toolname)
                 if len(valid_filepaths) > 0:
