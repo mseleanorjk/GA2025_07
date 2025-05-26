@@ -638,21 +638,17 @@ class HomeMessagesDB:
         Queries electricity consumption from the P1e table in the database. Allows user to specify either import, export, or both.
 
         """
-        elec_inp = input("Do you want electricity: Import/Export/Export & Import")
+        elec_inp = input("Do you want electricity: Import/Export")
         if(elec_inp.lower() == " import"):
-            query = f"SELECT AVG((Electricity_imported_T1 +Electricity_imported_T2)/2) as avg_import FROM P1e"
+            query = f" SELECT AVG(delta_import) AS avg_import FROM (SELECT (Electricity_imported_T1 + Electricity_imported_T2) - LAG(Electricity_imported_T1 + Electricity_imported_T2, 1, 0) OVER (ORDER BY epoch) AS delta_import FROM P1e) AS sub;"
             output = self.query_db(query)
             click.echo(f"the average {elec_inp} was {output}")
         elif(elec_inp.lower() == " export"):
-            query = f"SELECT AVG((Electricity_exported_T1 +Electricity_exported_T2)/2) as avg_export FROM P1e"
-            output = self.query_db(query)
-            click.echo(f"the average {elec_inp} was {output}")
-        elif(elec_inp.lower() == " export & import"):
-            query = f"SELECT AVG((Electricity_imported_T1 +Electricity_imported_T2)/2) as avg_import, AVG((Electricity_exported_T1 +Electricity_exported_T2)/2) as avg_export FROM '{tablename}'"
+            query = f"SELECT AVG(delta_import) AS avg_export FROM (SELECT (Electricity_exported_T1 + Electricity_exported_T2) - LAG(Electricity_exported_T1 + Electricity_exported_T2, 1, 0) OVER (ORDER BY epoch) AS delta_import FROM P1e) AS sub;"
             output = self.query_db(query)
             click.echo(f"the average {elec_inp} was {output}")
         else:
-            click.echo("Invalid input, please try again specifying import/export/both")
+            click.echo("Invalid input, please try again specifying import/export")
 
 
 
