@@ -2,7 +2,6 @@
 
 ## Notes
 - When testing the CLI tools, we noticed the instruction for smartthings was not referring to a real file in the directory. Please follow the instructions in the tool for inserting single documents
-- All CLI tools work by providing the filename (including when using the wildcard argument). In the case of MacOS, it ONLY works if the file argument is in string quotations marks (the terminal itself does not accept filenames if not in quotations), so we recommend using this syntax. In the case of WindowsOS it works regardless of the presence of quotation marks.
 - When using the CLI tools, ensure that data is either in the working directory which the script is called from or in a directory with structure: current_working_dir\data\toolname (just like the directory structure in which data was provided in on Brightspace)
 
 ## Documentation
