@@ -46,25 +46,25 @@ If two dates (but no time) are specified, start_date will be the specified start
         end_date: int (via helper function date_into_timestamp), timestamp corresponding to epochs in the database (if data from this epoch exists/has been added to the database).
 
 #### *validate_filename(filename, toolname)*
-This function checks if the filename specified by the user is suitable for this tool. E.g.: p1g files only for p1g tool. 
+This function checks if the filenames specified by the user is suitable for this tool. E.g.: p1g files only for p1g tool. It also checks if files are of a suitable format. E.g.: .csv, .tsv, .csv.gz and .tsv.gz files.
       Parameters:
-          filename: str
-              Filename specified by the user as input to the command-line tools 
+          filenames: list
+              Filenames to check (passed from check_filepaths() function)
           toolname: str
               Which tool called this function
         
       Raises:
           ValueError: "{filename} is not a valid {toolname} filepath!" 
-          if the specified filepath does not correspond to a datafile compatible with the tool which called it.
+          if the specified filepath is the only one specified by the user and does not correspond to a datafile compatible with the tool which called it.
       
       Returns:
           str: valid filename for tool currently in use
 
 #### *check_filepaths(user_input_files, toolname)*
-This function fetches valid filepaths based on user's input. Can handle single filename, and wildcard names with asterisk.
+This function fetches valid filepaths based on user's input. Can handle a single filename, and wildcard names with asterisk.
         Parameters:
-            user_input_files: str
-                String of filename the user wants to input into the database, or the wildcard query for this tool.
+            user_input_files: str or tuple
+                String of filename the user wants inserted/or the wildcard string, or tuple passed from the CLI tools. 
             toolname: str
                 Which tool called this function
 
@@ -73,12 +73,14 @@ This function fetches valid filepaths based on user's input. Can handle single f
                 If no files matching the specified filename are found in the directory.
             ValueError: "(One of) the file(s) {file} specified is not a valid file/is corrupted. Please try again."
                 If the filename specified corresponds to a corrupt file/not a file.
+            Exception: "No files specified! Please specify (a) filename(s) to insert!"
+                If the user has not provided any filenames to insert
 
         Returns:
             List of one or multiple filenames
 
-#### *timestamp_into_gmt2(timestamp)*
-This function takes NIX epoch timestamp and converts into datetime in GMT+2 timezone
+#### *timestamp_into_ams_time(timestamp)*
+This function takes NIX epoch timestamp and converts into datetime in Europe/Amsterdam timezone
 
     Parameters:
         timestamp: float
@@ -86,7 +88,7 @@ This function takes NIX epoch timestamp and converts into datetime in GMT+2 time
     
     Returns:
         datetime.datetime object
-            Datetime in GMT-2 (Noordwijk time)
+            Datetime in Europe/Amsterdam (Noordwijk time)
 
 
 ### HomeMessagesDB class methods

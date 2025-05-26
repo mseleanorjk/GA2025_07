@@ -94,13 +94,14 @@ def return_dates(timeinp):
     return start_date, end_date
 
 
-def validate_filename(filename, toolname):
+def validate_filename(filenames, toolname):
         """
-        Checks if filename is suitable for this tool. E.g.: p1g files only for p1g tool. 
+        Checks if filenames are suitable for this tool. E.g.: p1g files only for p1g tool.
+        Also checks if files are of a suitable format. E.g.: .csv, .tsv, .csv.gz and .tsv.gz files.
         
         Parameters:
-            filename: str
-                Filename specified by the user as input to the command-line tools 
+            filenames: list
+                Filenames to check
             toolname: str
                 Which tool called this function
 
@@ -108,58 +109,77 @@ def validate_filename(filename, toolname):
             str: valid filename for tool currently in use
         
         Raises:
-            ValueError: "{filename} is not a valid {toolname} filepath!" 
-            if the specified filepath does not correspond to a datafile compatible with the tool which called it.
+            ValueError: "{filename} is not a valid {toolname} filepath!"
+            if the specified filepath is the only one specified by the user and does not correspond to a datafile compatible with the tool which called it.
         """
-        if toolname not in str(filename):
-            logging.error(f"Validate_filepath failed for {filename} in {toolname}; invalid filepath")
-            raise ValueError(f"{filename} is not a valid {toolname} filepath! Please enter a valid {toolname} filepath.")
+        valid_filepaths = []
+        if len(filenames) == 1:
+            if toolname not in str(filenames[0]): # if we are trying to insert a file with the wrong name 
+                raise ValueError(f"{filenames[0]} is not a valid {toolname} filepath!  Please enter a valid {toolname} filepath.")
+            elif ".csv" not in str(filenames[0]) and ".tsv" not in str(filenames[0]): # if we are trying to insert something that is not a wildcard but is not the correct file format (thus not .csv, .tsv, .csv.gz, .tsv.gz)
+                raise ValueError(f"{filenames[0]} is not a valid {toolname} filepath!  Please enter a valid {toolname} filepath.")
+            else:
+                valid_filepaths.append(filenames[0])
         else:
-            return str(filename)
+            for filename in filenames:
+                if toolname not in str(filename):
+                    click.echo(f"{filenames[0]} is not a valid {toolname} filepath!  Please enter a valid {toolname} filepath.") # here, we want to echo the error instead of raising it, as we do not want it to interrupt the script if only one of many files is not suitable
+                elif ".csv" not in str(filename) and ".tsv" not in str(filename): #if the file is not a .csv, .tsv (or a compressed version of either), then it's not a valid file format
+                    click.echo(f"{filename} is not an accepted file format! This file will be skipped")
+                else:
+                    valid_filepaths.append(filename)
+        return(valid_filepaths)
 
-
+    
 
 def check_filepaths(user_input_files, toolname):
         """
         Fetches valid filepaths based on user's input. Can handle single filename, and wildcard names with asterisk.
         
         Parameters:
-            user_input_files: str
-                String of filename the user wants to input into the database, or the wildcard query for this tool.
+            user_input_files: tuple 
+                Tuple passed from the CLI tools or from another function, with the desired filename/filenames or all filenames fetched with the wildcard character
             toolname: str
                 Which tool called this function
 
         Raises: 
             Exception: "No files matching the specified pattern found! Please specify a valid {toolname} filepath." 
                 If no files matching the specified filename are found in the directory.
-            ValueError: "(One of) the file(s) {file} specified is not a valid file/is corrupted. Please try again."
-                If the filename specified corresponds to a corrupt file/not a file.
+            ValueError: "(One of) the file(s) {file} specified is not a valid file/is corrupted. Please enter a valid {toolname} filepath."
+                If the filename entered is not suitable for this tool (e.g.: P1g file tried through the smartthings tool).
+            Exception: "No files specified! Please specify (a) filename(s) to insert!"
+                If the user has not provided any filenames to insert
 
         Returns:
             List of one or multiple filenames
         """
-        valid_filepaths = []
-        script_dir = os.path.dirname(os.path.realpath(__file__))
-        tool_dir = os.path.join(script_dir, 'data', toolname)
-        filename = validate_filename(user_input_files, toolname)
-        full_path = os.path.join(tool_dir, filename)
-        click.echo(f"Globbing path: {full_path}")  # Add this line
-        files = glob.glob(full_path)    
-        if len(files) == 0:
-            raise Exception(f"No files matching the specified pattern found! Please specify a valid {toolname} filepath.")
-        for file in files:
-            if os.path.isfile(file):
-                base_name = os.path.basename(file)
-                if base_name.startswith(toolname):
-                    valid_filepaths.append(file)
+        if len(user_input_files) == 1 and (".py" in user_input_files[0] or "*" in user_input_files[0]): # if user provided only 1 file as an argument and if ".py" is its extension, or if the user specifies the wildcard in quotations (macOS) then no data files are found in this directory (meaning the data is stored in a 'data' folder)
+            if toolname not in str(user_input_files[0]):
+                raise ValueError(f"{user_input_files} is not a valid {toolname} filepath! Please enter a valid {toolname} filepath.")
             else:
-                raise ValueError(f"(One of) the file(s) {file} specified is not a valid file/is corrupted. Please try again.")
-        return(valid_filepaths)
+                script_dir = os.path.dirname(os.path.realpath(__file__)) # therefore, the following lines enter a directory called "data", then the directory of the toolname
+                tool_dir = os.path.join(script_dir, 'data', toolname) # so with these lines we are able to fetch data from a directory structure like the one in which the data was uploaded to Brightspace
+                full_path = os.path.join(tool_dir, user_input_files[0])
+                files = glob.glob(full_path) # now fetch all files from this directory
+                valid_filepaths = validate_filename(files, toolname)
+                if len(valid_filepaths) > 0:
+                    return(valid_filepaths)
+                else:
+                    raise Exception(f"No files matching the specified pattern found! Please specify a valid {toolname} filepath.") # if no matching files were found in this data directory either
+        elif len(user_input_files) == 0:
+            raise Exception("No files specified! Please specify (a) filename(s) to insert!")
+        else:
+            valid_filepaths = validate_filename(user_input_files, toolname)
+            if len(valid_filepaths) > 0:
+                return(valid_filepaths)
+            else:
+                raise Exception(f"No files matching the specified pattern found! Please specify a valid {toolname} filepath.")
+        
 
 
-def timestamp_into_gmt2(timestamp):
+def timestamp_into_ams_time(timestamp):
     """
-    Takes UNIX epoch timestamp and converts into datetime in GMT+2 timezone datetime
+    Takes UNIX epoch timestamp and converts into datetime in Europe/Amsterdam time
     
     Parameters:
         timestamp: float
@@ -167,7 +187,7 @@ def timestamp_into_gmt2(timestamp):
     
     Returns:
         datetime.datetime object
-            Datetime in GMT-2 (Noordwijk time)
+            Datetime in Europe/Amsterdam (Noordwijk time)
     
     """
     return(datetime.fromtimestamp(timestamp, ZoneInfo("Europe/Amsterdam")))
@@ -332,8 +352,6 @@ class HomeMessagesDB:
             result = connection.execute(check_query).fetchone()
             if result:
                 logging.info(f"{file_name} was already appended to table 'smartthings'")
-                click.echo(f"{file_name} was already appended to table 'smartthings'", err = True)
-
             else:
                 add_file_query = sa.text(f"INSERT INTO tracking (file_name) VALUES ('{file_name}')")
                 connection.execute(add_file_query)
@@ -416,7 +434,6 @@ class HomeMessagesDB:
         with self.db.begin() as connection:
            result = connection.execute(check_query).fetchone()
            if type(result) != NoneType:
-                click.echo(f"{file_name} was already appended to table 'P1e'")
                 logging.info(f"{file_name} was already appended to table 'P1e'")
            else:
                 try:
@@ -466,7 +483,6 @@ class HomeMessagesDB:
             result = connection.execute(check_query).fetchone()
             if result:
                 logging.info(f"{file_name} was already appended to table 'P1g'")
-                click.echo(f"{file_name} was already appended to table 'P1g'")
             else:
                 try:
                     P1g_new.to_sql("P1g", self.db.connect(), if_exists="append", index=False)
@@ -474,7 +490,6 @@ class HomeMessagesDB:
                     connection.execute(add_file_query)
                 except Exception as e:
                     logging.error(f"Could not insert data {file_name} in the P1g table in the database {self.url}: {e}")
-                    click.echo(f"{file_name} was already appended to table 'P1g'")
                     raise e 
 
 
@@ -571,8 +586,7 @@ class HomeMessagesDB:
                         connection.execute(erase_query)
                         delete_query = sa.text(f"DELETE FROM tracking WHERE file_name LIKE '%{table_name}%'")
                         connection.execute(delete_query)
-                        if message:
-                            logging.info(f"Data in table {table_name} deleted successfully")
+                        if message == True:
                             click.echo(f"Data in table {table_name} deleted successfully")
                         
                     except Exception as e:
@@ -619,22 +633,18 @@ class HomeMessagesDB:
         return(pd.DataFrame(self.query_db(f"SELECT * FROM '{table_name}'")))
 
 
-    def query_electricity(self,tablename):
+    def query_electricity(self):
         """
         Queries electricity consumption from the P1e table in the database. Allows user to specify either import, export, or both.
-
-        Parameters:
-            tablename: str
-                Table to fetch electricity consumption from. (Only P1e is supported.)
 
         """
         elec_inp = input("Do you want electricity: Import/Export/Export & Import")
         if(elec_inp.lower() == " import"):
-            query = f"SELECT AVG((Electricity_imported_T1 +Electricity_imported_T2)/2) as avg_import FROM '{tablename}'"
+            query = f"SELECT AVG((Electricity_imported_T1 +Electricity_imported_T2)/2) as avg_import FROM P1e"
             output = self.query_db(query)
             click.echo(f"the average {elec_inp} was {output}")
         elif(elec_inp.lower() == " export"):
-            query = f"SELECT AVG((Electricity_exported_T1 +Electricity_exported_T2)/2) as avg_export FROM '{tablename}'"
+            query = f"SELECT AVG((Electricity_exported_T1 +Electricity_exported_T2)/2) as avg_export FROM P1e"
             output = self.query_db(query)
             click.echo(f"the average {elec_inp} was {output}")
         elif(elec_inp.lower() == " export & import"):
@@ -646,7 +656,7 @@ class HomeMessagesDB:
 
 
 
-    def query_device(self, tablename, name_inp = None, dataframe = False):
+    def query_device(self, name_inp = None, dataframe = False):
         """
         Queries entries with a specific device name from the database. Currently specific to the Smartthings table.
 
@@ -670,7 +680,7 @@ class HomeMessagesDB:
         if name_inp == None:
             name_inp = input("Which device name do you want to filter the dataset for?")
         try:
-            query = f"SELECT * FROM '{tablename}' WHERE name = '{name_inp}'"
+            query = f"SELECT * FROM smartthings WHERE name = '{name_inp}'"
             output = self.query_db(query)
             click.echo(f"the device {name_inp} has the following values: {output}")
         except Exception as e:
@@ -752,13 +762,13 @@ class HomeMessagesDB:
             self.erase_table_content("P1g", ask = False, message = False)
                         
             # Adding all tables
-            files = check_filepaths("P1e*","P1e")
+            files = check_filepaths(("P1e*",),"P1e")
             for file in files:
                 self.insert_table_P1e(file)
-            files = check_filepaths("smartthings*","smartthings")
+            files = check_filepaths(("smartthings*",),"smartthings")
             for file in files:
                 self.insert_table_smartthings(file)
-            files = check_filepaths("P1g*","P1g")
+            files = check_filepaths(("P1g*",),"P1g")
             for file in files:
                 self.insert_table_P1g(file)
 
