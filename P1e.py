@@ -43,8 +43,13 @@ def P1e(dburl, erasetable, query, query_average, size, filename):
     
     elif filename:
         files = db.check_filepaths(filename, "P1e")
-        for file in files:
-            mydb.insert_table_P1e(file)
+        with click.progressbar(files) as bar:
+            for file in bar:
+                try:
+                    mydb.insert_table_P1e(file)
+                except Exception as e:
+                    click.echo(f"Error- failed to insert file: {e}",err=True, nl=True)
+            
         
     
 

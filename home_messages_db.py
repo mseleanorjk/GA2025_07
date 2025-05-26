@@ -161,7 +161,6 @@ def check_filepaths(user_input_files, toolname):
                 tool_dir = os.path.join(script_dir, 'data', toolname) # so with these lines we are able to fetch data from a directory structure like the one in which the data was uploaded to Brightspace
                 full_path = os.path.join(tool_dir, user_input_files[0])
                 files = glob.glob(full_path) # now fetch all files from this directory
-                click.echo(files)
                 valid_filepaths = validate_filename(files, toolname)
                 if len(valid_filepaths) > 0:
                     return(valid_filepaths)
@@ -353,8 +352,6 @@ class HomeMessagesDB:
             result = connection.execute(check_query).fetchone()
             if result:
                 logging.info(f"{file_name} was already appended to table 'smartthings'")
-                click.echo(f"{file_name} was already appended to table 'smartthings'", err = True)
-
             else:
                 add_file_query = sa.text(f"INSERT INTO tracking (file_name) VALUES ('{file_name}')")
                 connection.execute(add_file_query)
@@ -437,7 +434,6 @@ class HomeMessagesDB:
         with self.db.begin() as connection:
            result = connection.execute(check_query).fetchone()
            if type(result) != NoneType:
-                click.echo(f"{file_name} was already appended to table 'P1e'")
                 logging.info(f"{file_name} was already appended to table 'P1e'")
            else:
                 try:
@@ -487,7 +483,6 @@ class HomeMessagesDB:
             result = connection.execute(check_query).fetchone()
             if result:
                 logging.info(f"{file_name} was already appended to table 'P1g'")
-                click.echo(f"{file_name} was already appended to table 'P1g'")
             else:
                 try:
                     P1g_new.to_sql("P1g", self.db.connect(), if_exists="append", index=False)
@@ -495,7 +490,6 @@ class HomeMessagesDB:
                     connection.execute(add_file_query)
                 except Exception as e:
                     logging.error(f"Could not insert data {file_name} in the P1g table in the database {self.url}: {e}")
-                    click.echo(f"{file_name} was already appended to table 'P1g'")
                     raise e 
 
 
