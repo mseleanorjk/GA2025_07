@@ -586,8 +586,7 @@ class HomeMessagesDB:
                         connection.execute(erase_query)
                         delete_query = sa.text(f"DELETE FROM tracking WHERE file_name LIKE '%{table_name}%'")
                         connection.execute(delete_query)
-                        if message:
-                            logging.info(f"Data in table {table_name} deleted successfully")
+                        if message == True:
                             click.echo(f"Data in table {table_name} deleted successfully")
                         
                     except Exception as e:
@@ -763,13 +762,13 @@ class HomeMessagesDB:
             self.erase_table_content("P1g", ask = False, message = False)
                         
             # Adding all tables
-            files = check_filepaths("P1e*","P1e")
+            files = check_filepaths(("P1e*",),"P1e")
             for file in files:
                 self.insert_table_P1e(file)
-            files = check_filepaths("smartthings*","smartthings")
+            files = check_filepaths(("smartthings*",),"smartthings")
             for file in files:
                 self.insert_table_smartthings(file)
-            files = check_filepaths("P1g*","P1g")
+            files = check_filepaths(("P1g*",),"P1g")
             for file in files:
                 self.insert_table_P1g(file)
 
