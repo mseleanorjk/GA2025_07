@@ -137,8 +137,8 @@ def check_filepaths(user_input_files, toolname):
         Fetches valid filepaths based on user's input. Can handle single filename, and wildcard names with asterisk.
         
         Parameters:
-            user_input_files: str or tuple 
-                String of filename the user wants inserted/or the wildcard string, or tuple passed from the CLI tools. 
+            user_input_files: tuple 
+                Tuple passed from the CLI tools or from another function, with the desired filename/filenames or all filenames fetched with the wildcard character
             toolname: str
                 Which tool called this function
 
