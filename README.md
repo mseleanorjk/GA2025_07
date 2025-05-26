@@ -2,7 +2,8 @@
 
 ## Notes
 - When testing the CLI tools, we noticed the instruction for smartthings was not referring to a real file in the directory. Please follow the instructions in the tool for inserting single documents
-- All CLI tools work best if the filename (including when using the wildcard argument) is specified using quotation marks so we recommend using this syntax. This is also the case since some team members use MacOS, for which ONLY the file argument in string quotations works.
+- All CLI tools work best if the filename (including when using the wildcard argument) is specified using quotation marks so we recommend using this syntax. This is also the case since some team members use MacOS, for which ONLY the file argument in string quotations works. However, using no quotation marks also works.
+- When using the CLI tools, ensure that data is either in the working directory which the script is called from or in a directory with structure: current_working_dir\data\toolname (just like the directory structure in which data was provided in on Brightspace)
 
 ## Documentation
 
@@ -305,9 +306,9 @@ This methods takes a series of file names and inserts the files in the correct t
 
 | FullName | StudentId | GitHubName | Files |
 | :- | :- | :- | :- |
-| Eleonora Roncaglia | s2826577 | mseleanorjk | home_messages_db.py,\_\_init\_\_.py,Clustering_report.ipynb |
+| Eleonora Roncaglia | s2826577 | mseleanorjk | home_messages_db.py,\_\_init\_\_.py,Clustering_report.ipynb, README.md |
 | Mariel Canela Ramírez | s4140990 | mcanela01 | home_messages_db.py,Clustering_report.ipynb |
-| Elena Petridou | s2029197 | elena-petridou | P1g.py,Energy_usage_Report.ipynb,home_messages_db.py |
+| Elena Petridou | s2029197 | elena-petridou | P1g.py,Energy_usage_Report.ipynb,home_messages_db.py, smartthings.py, README.md |
 | Miro Eisenbarth | s4382706 | mebgits | P1g.py,Energy_usage_Report.ipynb,home_messages_db.py |
 | Bashier Gulzar | s4506987 | bassias | smartthings.py,Openweather_Report.ipynb |
 | Eva Rovan | s2644207 | eva-rovan | openweathermap.py,Openweather_Report.ipynb |
