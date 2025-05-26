@@ -697,9 +697,11 @@ class HomeMessagesDB:
         timeinp = input()
         start_date, end_date = return_dates(timeinp)
     
-        average = self.query_db(f'''SELECT AVG(Total_gas_used) AS average_value
-                            FROM P1g
-                            WHERE epoch >= {start_date} AND epoch <= {end_date}''')
+        average = self.query_db(f'''SELECT AVG(delta_import) AS avg_import FROM (
+                                SELECT Total_gas_used - LAG(Total_gas_used, 1, 0) OVER (ORDER BY epoch) AS delta_import
+                                FROM P1g
+                                WHERE epoch >= {start_date} AND epoch <= {end_date} 
+                                ) AS sub;''')
         click.echo(average)
 
 
