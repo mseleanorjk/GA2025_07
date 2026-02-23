@@ -1,6 +1,6 @@
 # Essentials for Data Science group assignment
 
-This project was part of the Essentials for Data Science 2025 course in Leiden University's MSc Statistics and Data Science. We were tasked with creating reports containing visualisations and other analytics extracted from multiple "messy" data sources. The data contained energy and gas usage readings from home smartmeters, and historical weather data from Open-meteo's historical weather API. The data was stored in JSON format, and had to be retrieved from a remote server, pre-processed and analysed in three reports. 
+This project was part of the Essentials for Data Science 2025 course in Leiden University's MSc Statistics and Data Science. We were tasked with creating reports containing visualisations and other analytics extracted from multiple "messy" data sources. The data contained energy and gas usage readings from home smartmeters, and historical weather data from Open-meteo's historical weather API. The data was provided to us in various formats (TSV, CSV JSON), and had to be stored to a database, queried, pre-processed and analysed in three reports. 
 
 We implemented the following tools: 
 1. A Database access module 'HomeMessagesDB' (contained in home_messages_db.py) which can create a database, insert data into it and query it.
